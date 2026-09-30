@@ -1,0 +1,6 @@
+{
+  "name": "ATLAUZ",
+  "description": "An integrated student learning workspace and well-being ecosystem prioritizing cognitive balance, flexible learning styles, and cross-suite consolidation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

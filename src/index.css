@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-mono: "Helvetica Neue", Helvetica, Arial, monospace;
+  }
+
+  *, *::before, *::after {
+    font-family: var(--font-sans) !important;
+  }
+
+  html {
+    filter: grayscale(100%);
+    -webkit-filter: grayscale(100%);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+    background-color: #0a0a0a;
+    color: #e5e5e5;
+  }
+}
+
+/* Prototype Wireframe Panels */
+.glass-frosted-idle {
+  background: #121212;
+  border: 1px solid #262626;
+  position: relative;
+}
+
+.glass-defrost-active {
+  background: #171717;
+  border: 1px solid #525252;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.glass-pill {
+  background: #1a1a1a;
+  border: 1px solid #333333;
+}
+
+/* Subtle Prototype Architectural Wireframe Grid */
+.bg-prototype-grid {
+  background-size: 32px 32px;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+}
+
+/* Hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  80% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-240px) scale(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(0deg) scale(0.98);
+  }
+  25% {
+    transform: rotate(-6deg) scale(1.02);
+  }
+  75% {
+    transform: rotate(6deg) scale(1.02);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-wiggle {
+  animation: wiggle 0.25s ease-in-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

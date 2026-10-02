@@ -80,8 +80,13 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         className="fixed inset-0 bg-black/80 transition-opacity"
       />
 
-      {/* Slide-over Standardized Sidebar Panel: Occupies 60% on mobile, 320px on desktop */}
-      <div className="relative w-[60vw] max-w-[60vw] sm:w-80 sm:max-w-sm bg-neutral-950 border-r border-neutral-700 h-full flex flex-col z-10 shadow-2xl text-white">
+      {/* Slide-over Standardized Sidebar Panel: 82vw on mobile for thumb reach, 320px on tablet/desktop */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation Sitemap"
+        className="relative w-[82vw] max-w-[340px] sm:w-80 sm:max-w-sm bg-neutral-950 border-r border-neutral-700 h-full flex flex-col z-10 shadow-2xl text-white animate-fade-in"
+      >
         {/* Top Header & Student Profile */}
         <div className="p-3 sm:p-4 border-b border-neutral-800 flex items-center justify-between bg-neutral-900 shrink-0">
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
@@ -99,17 +104,18 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1 rounded text-neutral-400 hover:text-white font-mono text-xs"
+            aria-label="Close sidebar navigation"
+            className="w-8 h-8 rounded flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-800 font-mono text-xs focus-visible:ring-2 focus-visible:ring-white"
             title="Close sidebar"
           >
-            [X]
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* User Card & Biometric Lock Strip */}
         <div className="px-3 py-2 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between shrink-0 font-mono">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-6 h-6 rounded bg-neutral-800 text-white border border-neutral-700 flex items-center justify-center font-bold text-[10px] shrink-0">
+            <div className="w-7 h-7 rounded bg-neutral-800 text-white border border-neutral-700 flex items-center justify-center font-bold text-[10px] shrink-0">
               {settings.username.slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0">
@@ -128,10 +134,10 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               onClose();
               onLockScreen();
             }}
-            className="px-2 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-[10px] border border-neutral-700 flex items-center gap-1 shrink-0"
+            className="min-h-[36px] px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-[11px] border border-neutral-700 flex items-center gap-1 shrink-0 focus-visible:ring-2 focus-visible:ring-white"
             title="Lock screen with Biometric Passkey"
           >
-            <Lock className="w-2.5 h-2.5 text-neutral-300" />
+            <Lock className="w-3 h-3 text-neutral-300" />
             <span>Lock</span>
           </button>
         </div>
@@ -160,7 +166,7 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       onNavigateTab(item.id as any);
                       onClose();
                     }}
-                    className="w-full flex items-center justify-between p-2 rounded hover:bg-neutral-900 border border-transparent hover:border-neutral-800 text-left transition-all group"
+                    className="w-full min-h-[48px] flex items-center justify-between p-2.5 rounded hover:bg-neutral-900 border border-transparent hover:border-neutral-800 text-left transition-all group focus-visible:ring-2 focus-visible:ring-white"
                   >
                     <div className="flex items-center gap-2.5">
                       <Icon className="w-4 h-4 text-neutral-400 group-hover:text-white" />
@@ -192,7 +198,7 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   onClose();
                   onCreateResourceClick();
                 }}
-                className="text-[9px] font-bold text-neutral-300 hover:text-white"
+                className="text-[10px] font-bold text-neutral-300 hover:text-white min-h-[32px] px-2 flex items-center"
               >
                 All →
               </button>
@@ -204,9 +210,9 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   onClose();
                   onCreateResourceClick();
                 }}
-                className="p-1.5 rounded bg-black hover:bg-neutral-850 border border-neutral-800 text-left text-xs transition-all flex items-center gap-1.5 min-w-0 text-white"
+                className="min-h-[44px] p-2 rounded bg-black hover:bg-neutral-800 border border-neutral-800 text-left text-xs transition-all flex items-center gap-1.5 min-w-0 text-white focus-visible:ring-2 focus-visible:ring-white"
               >
-                <BookOpen className="w-3 h-3 text-white shrink-0" />
+                <BookOpen className="w-3.5 h-3.5 text-white shrink-0" />
                 <span className="truncate text-[10px]">Notebook</span>
               </button>
 
@@ -215,10 +221,10 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   onClose();
                   onCreateResourceClick();
                 }}
-                className="p-1.5 rounded bg-black hover:bg-neutral-850 border border-neutral-800 text-left text-xs transition-all flex items-center gap-1.5 min-w-0 text-white"
+                className="min-h-[44px] p-2 rounded bg-black hover:bg-neutral-800 border border-neutral-800 text-left text-xs transition-all flex items-center gap-1.5 min-w-0 text-white focus-visible:ring-2 focus-visible:ring-white"
               >
-                <FileText className="w-3 h-3 text-white shrink-0" />
-                <span className="truncate text-[10px]">Doc</span>
+                <FileText className="w-3.5 h-3.5 text-white shrink-0" />
+                <span className="truncate text-[10px]">Document</span>
               </button>
 
               <button
@@ -226,9 +232,9 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   onClose();
                   onCreateResourceClick();
                 }}
-                className="p-1.5 rounded bg-black hover:bg-neutral-850 border border-neutral-800 text-left text-xs transition-all flex items-center gap-1.5 min-w-0 text-white"
+                className="min-h-[44px] p-2 rounded bg-black hover:bg-neutral-800 border border-neutral-800 text-left text-xs transition-all flex items-center gap-1.5 min-w-0 text-white focus-visible:ring-2 focus-visible:ring-white"
               >
-                <Presentation className="w-3 h-3 text-white shrink-0" />
+                <Presentation className="w-3.5 h-3.5 text-white shrink-0" />
                 <span className="truncate text-[10px]">Slides</span>
               </button>
 
@@ -237,9 +243,9 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   onClose();
                   onCreateResourceClick();
                 }}
-                className="p-1.5 rounded bg-black hover:bg-neutral-850 border border-neutral-800 text-left text-xs transition-all flex items-center gap-1.5 min-w-0 text-white"
+                className="min-h-[44px] p-2 rounded bg-black hover:bg-neutral-800 border border-neutral-800 text-left text-xs transition-all flex items-center gap-1.5 min-w-0 text-white focus-visible:ring-2 focus-visible:ring-white"
               >
-                <GraduationCap className="w-3 h-3 text-white shrink-0" />
+                <GraduationCap className="w-3.5 h-3.5 text-white shrink-0" />
                 <span className="truncate text-[10px]">Lesson</span>
               </button>
             </div>

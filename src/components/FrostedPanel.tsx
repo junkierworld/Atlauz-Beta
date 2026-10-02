@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, ChevronRight, Eye, EyeOff } from 'lucide-react';
+import { ChevronDown, ChevronRight, Eye, EyeOff, Sparkles } from 'lucide-react';
 
 interface FrostedPanelProps {
   id?: string;
@@ -12,6 +12,7 @@ interface FrostedPanelProps {
   children: React.ReactNode;
   headerActions?: React.ReactNode;
   className?: string;
+  isStreakFrozen?: boolean;
 }
 
 export const FrostedPanel: React.FC<FrostedPanelProps> = ({
@@ -23,18 +24,41 @@ export const FrostedPanel: React.FC<FrostedPanelProps> = ({
   onToggleFrost,
   children,
   headerActions,
-  className = ''
+  className = '',
+  isStreakFrozen = false
 }) => {
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Intentional long-press trigger for tactile defrosting (450ms)
+  const handleTouchStart = () => {
+    longPressTimerRef.current = setTimeout(() => {
+      onToggleFrost();
+    }, 450);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
   return (
     <motion.div
       layout
       id={id}
-      transition={{ duration: 0.25, ease: 'easeInOut' }}
-      className={`rounded-lg transition-all duration-200 overflow-hidden ${
-        isFrosted
-          ? 'bg-neutral-950 border border-neutral-800 p-3 sm:p-3.5 cursor-pointer select-none'
-          : 'bg-neutral-900 border border-neutral-600 p-4 sm:p-5'
+      onDoubleClick={onToggleFrost}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      className={`rounded-lg transition-all duration-200 overflow-hidden relative ${
+        isStreakFrozen
+          ? 'bg-freeze-pattern bg-neutral-950 border border-neutral-700/80 backdrop-blur-[20px]'
+          : isFrosted
+          ? 'glass-frosted-idle p-3 sm:p-3.5 cursor-pointer select-none'
+          : 'glass-defrost-active p-4 sm:p-5'
       } ${className}`}
+      title={isFrosted ? 'Double-tap or long-press to defrost' : 'Double-tap to frost'}
     >
       {/* HEADER: When frosted, only shows title & toggle */}
       <div
@@ -50,8 +74,12 @@ export const FrostedPanel: React.FC<FrostedPanelProps> = ({
 
           <div className="flex items-center gap-2 truncate">
             <h3
-              className={`font-bold truncate text-sm sm:text-base tracking-tight transition-colors ${
-                isFrosted ? 'text-neutral-400 hover:text-white' : 'text-white'
+              className={`font-bold truncate text-sm sm:text-base tracking-tight font-mono transition-colors ${
+                isStreakFrozen
+                  ? 'text-neutral-500 line-through'
+                  : isFrosted
+                  ? 'text-neutral-400 hover:text-white'
+                  : 'text-white'
               }`}
             >
               {title}
@@ -66,6 +94,12 @@ export const FrostedPanel: React.FC<FrostedPanelProps> = ({
                 }`}
               >
                 {badge}
+              </span>
+            )}
+
+            {isStreakFrozen && (
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-700 text-neutral-400 uppercase">
+                [PAUSED // REST DAY]
               </span>
             )}
           </div>
@@ -85,18 +119,18 @@ export const FrostedPanel: React.FC<FrostedPanelProps> = ({
                 ? 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-700'
                 : 'bg-white text-black hover:bg-neutral-200 border border-white'
             }`}
-            title={isFrosted ? 'Click to reveal details' : 'Click to conceal into compact title'}
+            title={isFrosted ? 'Click, double-tap, or long-press to defrost' : 'Click to frost into compact title'}
           >
             {isFrosted ? (
               <>
                 <EyeOff className="w-3 h-3 text-neutral-400" />
-                <span className="hidden sm:inline">CONCEALED</span>
+                <span className="hidden sm:inline">FROSTED</span>
                 <ChevronRight className="w-3 h-3 text-neutral-500" />
               </>
             ) : (
               <>
                 <Eye className="w-3 h-3 text-black" />
-                <span className="hidden sm:inline">REVEALED</span>
+                <span className="hidden sm:inline">DEFROSTED</span>
                 <ChevronDown className="w-3 h-3 text-black" />
               </>
             )}
@@ -104,7 +138,7 @@ export const FrostedPanel: React.FC<FrostedPanelProps> = ({
         </div>
       </div>
 
-      {/* REVEALED CONTENT: When unfrosted, reveals full details */}
+      {/* BODY CONTENT: Revealed when Defrosted */}
       <AnimatePresence initial={false}>
         {!isFrosted && (
           <motion.div
@@ -112,7 +146,7 @@ export const FrostedPanel: React.FC<FrostedPanelProps> = ({
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="mt-4 pt-3.5 border-t border-neutral-800"
+            className="pt-3 sm:pt-4 border-t border-neutral-800 mt-3"
           >
             {children}
           </motion.div>

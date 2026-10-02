@@ -37,7 +37,7 @@ import {
 interface ProfileViewProps {
   settings: UserAccountSettings;
   onUpdateSettings: (updated: Partial<UserAccountSettings>) => void;
-  onShowToast: (msg: string) => void;
+  onShowToast: (msg: string | { message: string; type?: 'info' | 'success' | 'warning' | 'error'; onUndo?: () => void; undoLabel?: string }) => void;
   onLockSession: () => void;
   onSwitchTab?: (tab: 'hub' | 'library' | 'workspace' | 'companion') => void;
 }
@@ -93,6 +93,61 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [newGoalText, setNewGoalText] = useState('');
   const [isGeneratingBackupCode, setIsGeneratingBackupCode] = useState(false);
   const [backupCode, setBackupCode] = useState<string | null>(null);
+
+  // Identity validation state
+  const [isEditingIdentity, setIsEditingIdentity] = useState(false);
+  const [tempUsername, setTempUsername] = useState(settings.username || '');
+  const [tempEmail, setTempEmail] = useState(settings.email || '');
+  const [identityTouched, setIdentityTouched] = useState<{ username?: boolean; email?: boolean }>({});
+
+  const getUsernameError = (): string | null => {
+    if (!identityTouched.username) return null;
+    const trimmed = tempUsername.trim();
+    if (!trimmed) return 'Username is required. Please specify a handle.';
+    if (trimmed.length < 3) return `Username must be at least 3 characters (currently ${trimmed.length}).`;
+    if (trimmed.length > 20) return `Username must be 20 characters or fewer (currently ${trimmed.length}).`;
+    if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) {
+      return 'Username may only contain letters, numbers, hyphens, and underscores.';
+    }
+    return null;
+  };
+
+  const getEmailError = (): string | null => {
+    if (!identityTouched.email) return null;
+    const trimmed = tempEmail.trim();
+    if (!trimmed) return 'Email address is required.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      return 'Please enter a valid email address (e.g. scholar@university.edu).';
+    }
+    return null;
+  };
+
+  const usernameError = getUsernameError();
+  const emailError = getEmailError();
+
+  const handleSaveIdentity = () => {
+    setIdentityTouched({ username: true, email: true });
+    const uTrimmed = tempUsername.trim();
+    const eTrimmed = tempEmail.trim();
+    const uErr = uTrimmed.length < 3 || uTrimmed.length > 20 || !/^[a-zA-Z0-9_-]+$/.test(uTrimmed);
+    const eErr = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(eTrimmed);
+    if (uErr || eErr) {
+      onShowToast({
+        message: 'Please resolve input validation errors before saving.',
+        type: 'error'
+      });
+      return;
+    }
+    onUpdateSettings({
+      username: uTrimmed,
+      email: eTrimmed
+    });
+    setIsEditingIdentity(false);
+    onShowToast({
+      message: 'Scholarly credentials & identity updated.',
+      type: 'success'
+    });
+  };
 
   // Role ecosystem configurations
   const roleSpecs: Record<
@@ -185,21 +240,38 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   const handleAddGoal = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newGoalText.trim()) return;
-    const currentGoals = settings.goals || [];
-    if (currentGoals.length >= 8) {
-      onShowToast('Maximum 8 active goals reached.');
+    const trimmed = newGoalText.trim();
+    if (!trimmed) {
+      onShowToast({ message: 'Please enter a goal description (minimum 3 characters).', type: 'warning' });
       return;
     }
-    onUpdateSettings({ goals: [...currentGoals, newGoalText.trim()] });
+    if (trimmed.length < 3) {
+      onShowToast({ message: `Goal is too brief (${trimmed.length}/3 chars). Please provide more detail.`, type: 'warning' });
+      return;
+    }
+    const currentGoals = settings.goals || [];
+    if (currentGoals.length >= 8) {
+      onShowToast({ message: 'Maximum 8 active goals reached. Complete or archive one to add more.', type: 'warning' });
+      return;
+    }
+    onUpdateSettings({ goals: [...currentGoals, trimmed] });
     setNewGoalText('');
-    onShowToast('New milestone goal registered');
+    onShowToast({ message: `Goal registered: "${trimmed}"`, type: 'success' });
   };
 
   const handleRemoveGoal = (idx: number) => {
+    const targetGoal = (settings.goals || [])[idx];
     const nextGoals = (settings.goals || []).filter((_, i) => i !== idx);
     onUpdateSettings({ goals: nextGoals });
-    onShowToast('Milestone goal removed');
+    onShowToast({
+      message: `Goal removed: "${targetGoal}"`,
+      onUndo: () => {
+        const restored = [...nextGoals];
+        restored.splice(idx, 0, targetGoal);
+        onUpdateSettings({ goals: restored });
+      },
+      undoLabel: 'Undo'
+    });
   };
 
   const handleTogglePreference = <K extends keyof typeof settings.learningPreferences>(
@@ -761,6 +833,135 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 );
               })}
             </div>
+          </div>
+
+          {/* Scholarly Identity & Email Credentials with Real-time Inline Validation */}
+          <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+              <div>
+                <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2">
+                  <User className="w-4 h-4 text-white" />
+                  <span>Scholarly Identity & Credentials</span>
+                </h3>
+                <p className="text-xs text-neutral-400 mt-0.5">
+                  Public academic handle and cryptographic communication relay address.
+                </p>
+              </div>
+
+              {!isEditingIdentity ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTempUsername(settings.username);
+                    setTempEmail(settings.email);
+                    setIsEditingIdentity(true);
+                  }}
+                  className="px-3.5 py-2 rounded bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-xs font-mono font-bold text-white transition-all min-h-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-white shrink-0"
+                >
+                  Edit Credentials
+                </button>
+              ) : (
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingIdentity(false);
+                      setIdentityTouched({});
+                    }}
+                    className="px-3.5 py-2 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-mono min-h-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveIdentity}
+                    className="px-3.5 py-2 rounded bg-white text-black hover:bg-neutral-200 text-xs font-mono font-bold min-h-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-white"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {isEditingIdentity ? (
+              <div className="space-y-4 pt-2">
+                {/* Username Input */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label htmlFor="temp-username-input" className="text-xs font-mono text-neutral-300 font-bold">
+                      Academic Handle (Username):
+                    </label>
+                    <span className="text-[10px] font-mono text-neutral-500">{tempUsername.length}/20</span>
+                  </div>
+                  <input
+                    id="temp-username-input"
+                    type="text"
+                    value={tempUsername}
+                    onBlur={() => setIdentityTouched(prev => ({ ...prev, username: true }))}
+                    onChange={e => {
+                      setTempUsername(e.target.value);
+                      if (!identityTouched.username) setIdentityTouched(prev => ({ ...prev, username: true }));
+                    }}
+                    className={`w-full bg-neutral-950 border rounded px-3 py-2 text-xs font-mono text-white outline-none min-h-[44px] transition-colors focus-visible:ring-2 focus-visible:ring-white ${
+                      usernameError ? 'border-red-500' : 'border-neutral-700 focus:border-white'
+                    }`}
+                  />
+                  {usernameError ? (
+                    <p className="text-[11px] text-red-400 mt-1 font-mono flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      <span>{usernameError}</span>
+                    </p>
+                  ) : identityTouched.username && (
+                    <p className="text-[11px] text-neutral-400 mt-1 font-mono flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                      <span>Handle verified.</span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Email Input */}
+                <div>
+                  <label htmlFor="temp-email-input" className="text-xs font-mono text-neutral-300 font-bold block mb-1">
+                    Primary Institutional Email:
+                  </label>
+                  <input
+                    id="temp-email-input"
+                    type="email"
+                    value={tempEmail}
+                    onBlur={() => setIdentityTouched(prev => ({ ...prev, email: true }))}
+                    onChange={e => {
+                      setTempEmail(e.target.value);
+                      if (!identityTouched.email) setIdentityTouched(prev => ({ ...prev, email: true }));
+                    }}
+                    className={`w-full bg-neutral-950 border rounded px-3 py-2 text-xs font-mono text-white outline-none min-h-[44px] transition-colors focus-visible:ring-2 focus-visible:ring-white ${
+                      emailError ? 'border-red-500' : 'border-neutral-700 focus:border-white'
+                    }`}
+                  />
+                  {emailError ? (
+                    <p className="text-[11px] text-red-400 mt-1 font-mono flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      <span>{emailError}</span>
+                    </p>
+                  ) : identityTouched.email && (
+                    <p className="text-[11px] text-neutral-400 mt-1 font-mono flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                      <span>Email format verified.</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs font-mono">
+                <div className="p-3 rounded bg-neutral-950 border border-neutral-800">
+                  <div className="text-[10px] text-neutral-500 uppercase">Username / Handle</div>
+                  <div className="text-white font-bold mt-0.5">@{settings.username}</div>
+                </div>
+                <div className="p-3 rounded bg-neutral-950 border border-neutral-800">
+                  <div className="text-[10px] text-neutral-500 uppercase">Verified Relay Email</div>
+                  <div className="text-white font-bold mt-0.5 truncate">{settings.email}</div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Academic Statement & Bio */}

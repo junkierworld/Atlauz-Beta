@@ -7,81 +7,70 @@ interface BottomNavProps {
   onChangeTab: (tab: 'hub' | 'library' | 'workspace' | 'companion' | 'profile') => void;
 }
 
+const NAV_ITEMS: Array<{
+  id: 'hub' | 'library' | 'workspace' | 'companion' | 'profile';
+  label: string;
+  icon?: any;
+  isLogo?: boolean;
+}> = [
+  { id: 'hub', label: 'Hub', icon: LayoutDashboard },
+  { id: 'library', label: 'Library', icon: BookOpen },
+  { id: 'workspace', label: 'Workspace', icon: Layers },
+  { id: 'companion', label: 'Companion', isLogo: true },
+  { id: 'profile', label: 'Profile', icon: User }
+];
+
 export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }) => {
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 pb-safe bg-[#0d0d0d] border-t border-neutral-800">
-      <div className="flex justify-around items-center h-14 max-w-lg mx-auto px-2">
-        {/* Hub Tab */}
-        <button
-          onClick={() => onChangeTab('hub')}
-          className={`flex flex-col items-center justify-center gap-1 min-w-[56px] py-1 px-2.5 rounded-md transition-all active:scale-95 ${
-            activeTab === 'hub'
-              ? 'text-white bg-neutral-800 border border-neutral-600'
-              : 'text-neutral-400 hover:text-white'
-          }`}
-        >
-          <LayoutDashboard className="w-4 h-4" />
-          <span className="text-[10px] font-bold tracking-wide">Hub</span>
-        </button>
+    <nav
+      role="navigation"
+      aria-label="Main application tabs"
+      className="fixed bottom-0 inset-x-0 z-40 pb-safe bg-[#0d0d0d] border-t border-neutral-800 backdrop-blur-md"
+    >
+      <div
+        role="tablist"
+        aria-label="Navigation hubs"
+        className="flex justify-around items-center h-16 max-w-lg mx-auto px-2"
+      >
+        {NAV_ITEMS.map(item => {
+          const isActive = activeTab === item.id;
+          const Icon = item.icon;
 
-        {/* Library Tab (Bookshelf) */}
-        <button
-          onClick={() => onChangeTab('library')}
-          className={`flex flex-col items-center justify-center gap-1 min-w-[56px] py-1 px-2.5 rounded-md transition-all active:scale-95 ${
-            activeTab === 'library'
-              ? 'text-white bg-neutral-800 border border-neutral-600'
-              : 'text-neutral-400 hover:text-white'
-          }`}
-        >
-          <BookOpen className="w-4 h-4" />
-          <span className="text-[10px] font-bold tracking-wide">Library</span>
-        </button>
-
-        {/* Workspace Tab */}
-        <button
-          onClick={() => onChangeTab('workspace')}
-          className={`flex flex-col items-center justify-center gap-1 min-w-[56px] py-1 px-2.5 rounded-md transition-all active:scale-95 ${
-            activeTab === 'workspace'
-              ? 'text-white bg-neutral-800 border border-neutral-600'
-              : 'text-neutral-400 hover:text-white'
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          <span className="text-[10px] font-bold tracking-wide">Workspace</span>
-        </button>
-
-        {/* Companion Tab */}
-        <button
-          onClick={() => onChangeTab('companion')}
-          className={`flex flex-col items-center justify-center gap-1 min-w-[56px] py-1 px-2.5 rounded-md transition-all active:scale-95 ${
-            activeTab === 'companion'
-              ? 'text-white bg-neutral-800 border border-neutral-600'
-              : 'text-neutral-400 hover:text-white'
-          }`}
-        >
-          <AtlauzLogo
-            variant="icon"
-            size={18}
-            animated={activeTab === 'companion'}
-            className={activeTab === 'companion' ? 'opacity-100' : 'opacity-60'}
-          />
-          <span className="text-[10px] font-bold tracking-wide">Companion</span>
-        </button>
-
-        {/* Profile Tab */}
-        <button
-          onClick={() => onChangeTab('profile')}
-          className={`flex flex-col items-center justify-center gap-1 min-w-[56px] py-1 px-2.5 rounded-md transition-all active:scale-95 ${
-            activeTab === 'profile'
-              ? 'text-white bg-neutral-800 border border-neutral-600'
-              : 'text-neutral-400 hover:text-white'
-          }`}
-        >
-          <User className="w-4 h-4" />
-          <span className="text-[10px] font-bold tracking-wide">Profile</span>
-        </button>
+          return (
+            <button
+              key={item.id}
+              role="tab"
+              id={`tab-${item.id}`}
+              aria-selected={isActive}
+              aria-controls={`panel-${item.id}`}
+              aria-label={`${item.label} hub`}
+              onClick={() => onChangeTab(item.id)}
+              className={`flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[48px] py-1.5 px-3 rounded-md transition-all active:scale-95 focus-visible:ring-2 focus-visible:ring-white select-none ${
+                isActive
+                  ? 'text-white bg-neutral-900 border border-neutral-700 shadow-sm'
+                  : 'text-neutral-400 hover:text-white hover:bg-neutral-950 border border-transparent'
+              }`}
+            >
+              {item.isLogo ? (
+                <AtlauzLogo
+                  variant="icon"
+                  size={18}
+                  animated={isActive}
+                  className={isActive ? 'opacity-100' : 'opacity-60'}
+                />
+              ) : (
+                <Icon className="w-4 h-4" />
+              )}
+              <span className={`text-[10px] tracking-wide font-mono ${isActive ? 'font-bold text-white' : 'font-medium'}`}>
+                {item.label}
+              </span>
+              {isActive && (
+                <span className="w-1 h-1 rounded-full bg-white -mt-0.5" aria-hidden="true" />
+              )}
+            </button>
+          );
+        })}
       </div>
     </nav>
   );
 };
-

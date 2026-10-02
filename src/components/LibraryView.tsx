@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { ResourceItem, ResourceType, UserRole, LibraryTaskItem } from '../types';
 import { BadgeSelector } from './BadgeSelector';
+import { SkeletonLoader } from './SkeletonLoader';
 import { AVAILABLE_BADGES, initialLibraryTasks } from '../data';
 import { isLightBackground, getAdaptiveTextColor, getAdaptiveSubtextColor } from '../utils/contrast';
 
@@ -45,7 +46,7 @@ interface LibraryViewProps {
   onUpdateBadge: (resourceId: string, badge: string) => void;
   onUpdateCoverColor: (resourceId: string, color: string) => void;
   onUpdateResource?: (resourceId: string, updated: Partial<ResourceItem>) => void;
-  onShowToast: (msg: string) => void;
+  onShowToast: (msg: string | { message: string; type?: 'info' | 'success' | 'warning' | 'error'; onUndo?: () => void; undoLabel?: string }) => void;
   userRole?: UserRole;
 }
 
@@ -74,6 +75,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 }) => {
   const [activeViewTab, setActiveViewTab] = useState<'bookshelf' | 'notepad_tasks'>('bookshelf');
   const [activeTypeFilter, setActiveTypeFilter] = useState<string>('all');
+  const [isShelfLoading, setIsShelfLoading] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeColorPickerId, setActiveColorPickerId] = useState<string | null>(null);
   const [activeBadgePickerId, setActiveBadgePickerId] = useState<string | null>(null);
@@ -198,8 +200,16 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   };
 
   const handleDeleteTask = (id: string) => {
+    const targetTask = tasks.find(t => t.id === id);
+    if (!targetTask) return;
     setTasks(prev => prev.filter(t => t.id !== id));
-    onShowToast('Task removed');
+    onShowToast({
+      message: `Task removed: "${targetTask.text}"`,
+      onUndo: () => {
+        setTasks(prev => [targetTask, ...prev]);
+      },
+      undoLabel: 'Undo'
+    });
   };
 
   const handleCopyNotes = () => {
@@ -333,8 +343,12 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               )}
             </div>
 
-            {/* Category Filter Buttons */}
-            <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto no-scrollbar text-xs font-mono">
+            {/* Category Filter Buttons with 44px touch targets */}
+            <div
+              role="tablist"
+              aria-label="Bookshelf categories"
+              className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto no-scrollbar text-xs font-mono py-1"
+            >
               {[
                 { id: 'all', label: 'All' },
                 { id: 'pinned', label: 'Pinned' },
@@ -347,10 +361,18 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               ].map(tab => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTypeFilter(tab.id)}
-                  className={`px-2.5 py-1.5 rounded transition-all whitespace-nowrap ${
+                  role="tab"
+                  aria-selected={activeTypeFilter === tab.id}
+                  onClick={() => {
+                    if (activeTypeFilter !== tab.id) {
+                      setIsShelfLoading(true);
+                      setActiveTypeFilter(tab.id);
+                      setTimeout(() => setIsShelfLoading(false), 220);
+                    }
+                  }}
+                  className={`min-touch-target px-3.5 py-2 rounded transition-all whitespace-nowrap focus-visible:ring-2 focus-visible:ring-white flex items-center justify-center ${
                     activeTypeFilter === tab.id
-                      ? 'bg-white text-black font-bold'
+                      ? 'bg-white text-black font-bold ring-1 ring-white'
                       : 'bg-neutral-950 text-neutral-400 hover:text-white border border-neutral-800'
                   }`}
                 >
@@ -361,9 +383,9 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
             <button
               onClick={onCreateResourceClick}
-              className="w-full sm:w-auto px-3 py-2 rounded bg-neutral-800 hover:bg-neutral-700 text-white font-mono font-bold text-xs border border-neutral-600 flex items-center justify-center gap-1.5 shrink-0"
+              className="min-touch-target w-full sm:w-auto px-4 py-2 rounded bg-neutral-800 hover:bg-neutral-700 text-white font-mono font-bold text-xs border border-neutral-600 flex items-center justify-center gap-1.5 shrink-0 focus-visible:ring-2 focus-visible:ring-white"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4" />
               <span>New Volume</span>
             </button>
           </div>
@@ -379,7 +401,9 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               </span>
             </div>
 
-            {filteredResources.length === 0 ? (
+            {isShelfLoading ? (
+              <SkeletonLoader type="shelf" count={8} label="Loading bookshelf volumes..." className="py-2" />
+            ) : filteredResources.length === 0 ? (
               <div className="p-12 rounded-lg bg-neutral-900 border border-neutral-800 text-center flex flex-col items-center justify-center gap-2">
                 <BookOpen className="w-8 h-8 text-neutral-500" />
                 <span className="font-bold text-sm text-white font-mono">No books found in this shelf section</span>
@@ -388,7 +412,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                 </p>
                 <button
                   onClick={onCreateResourceClick}
-                  className="mt-2 px-4 py-1.5 rounded bg-white text-black font-mono font-bold text-xs"
+                  className="min-touch-target mt-2 px-4 py-2 rounded bg-white text-black font-mono font-bold text-xs focus-visible:ring-2 focus-visible:ring-white"
                 >
                   + Create New Volume
                 </button>

@@ -8,7 +8,7 @@ import { CompanionView } from './components/CompanionView';
 import { WorkspaceView } from './components/WorkspaceView';
 import { SidebarDrawer } from './components/SidebarDrawer';
 import { LockScreen } from './components/LockScreen';
-import { Toast } from './components/Toast';
+import { Toast, ToastItem } from './components/Toast';
 import { GoogleDocsEditor } from './components/GoogleDocsEditor';
 import { PresentationEditor } from './components/PresentationEditor';
 import { NotebookViewer } from './components/NotebookViewer';
@@ -27,7 +27,8 @@ import {
   initialSchedule,
   initialConnectedApps,
   initialSettings,
-  initialResources
+  initialResources,
+  initialCollaborativeBentoTiles
 } from './data';
 import {
   CompanionState,
@@ -36,7 +37,8 @@ import {
   ScheduleBlock,
   ConnectedApp,
   UserAccountSettings,
-  ResourceItem
+  ResourceItem,
+  CollaborativeBentoTile
 } from './types';
 
 export default function App() {
@@ -47,7 +49,7 @@ export default function App() {
   const [connectedApps, setConnectedApps] = useState<ConnectedApp[]>(initialConnectedApps);
   const [settings, setSettings] = useState<UserAccountSettings>(initialSettings);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastState, setToastState] = useState<ToastItem | string | null>(null);
   const [isDistractionFree, setIsDistractionFree] = useState<boolean>(false);
 
   // Functional resource library states
@@ -56,15 +58,22 @@ export default function App() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [isFishingModalOpen, setIsFishingModalOpen] = useState<boolean>(false);
 
+  // Collaborative Bento Workspaces state (CRDT & Co-Presence)
+  const [collabTiles, setCollabTiles] = useState<CollaborativeBentoTile[]>(initialCollaborativeBentoTiles);
+
   // Swipe / Long-press detection for mobile gesture navigation
   const touchStartXRef = useRef<number>(0);
   const touchStartTimeRef = useRef<number>(0);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
+  const showToast = (toastInput: string | ToastItem, onUndoCallback?: () => void) => {
+    if (typeof toastInput === 'string') {
+      setToastState(onUndoCallback ? { message: toastInput, onUndo: onUndoCallback } : toastInput);
+    } else {
+      setToastState(toastInput);
+    }
     setTimeout(() => {
-      setToastMessage(prev => (prev === msg ? null : prev));
-    }, 2400);
+      setToastState(prev => (prev === toastInput ? null : prev));
+    }, 3200);
   };
 
   const handleToggleDistractionFree = (forceState?: boolean) => {
@@ -363,6 +372,8 @@ export default function App() {
             isDistractionFree={isDistractionFree}
             onToggleDistractionFree={handleToggleDistractionFree}
             userRole={settings.role}
+            collabBentoTiles={collabTiles}
+            onUpdateCollabBentoTiles={setCollabTiles}
           />
         )}
 
@@ -523,7 +534,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* Floating Interaction Feedback Toast */}
-      <Toast message={toastMessage} />
+      <Toast toast={toastState} onDismiss={() => setToastState(null)} />
 
       {/* Bottom Navigation Dock (z-50) - Hidden in No Distraction Mode */}
       {!isDistractionFree && (

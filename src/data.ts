@@ -6,7 +6,10 @@ import {
   ConnectedApp,
   UserAccountSettings,
   ResourceItem,
-  ResourceBadge
+  ResourceBadge,
+  CollaborativeBentoTile,
+  RestDayVaultEntry,
+  ScrapbookItem
 } from './types';
 
 export const AVAILABLE_BADGES: ResourceBadge[] = [
@@ -603,3 +606,274 @@ navigator.vibrate?.([tactileFrequency, 20, tactileFrequency * 0.8]);
     }
   }
 ];
+
+export const initialCollaborativeBentoTiles: CollaborativeBentoTile[] = [
+  {
+    id: 'collab-bento-1',
+    title: 'Hadal Acoustic Task Board',
+    type: 'task_board',
+    isShared: true,
+    shareToken: 'atlauz-bento-token-7f9a12c',
+    accessLevel: 'co-editor',
+    crdtClock: 142,
+    collaborators: [
+      {
+        id: 'u-1',
+        initials: 'LK',
+        name: 'Dr. Sarah Lin',
+        role: 'Visiting Faculty • Acoustic Lead',
+        institution: 'Woods Hole & MIT',
+        isEditing: true,
+        presenceStatus: 'online',
+        activeBlockId: 'blk-2',
+        currentAction: 'Refining salinity coefficient in Eq. 4.2',
+        lastActiveTime: 'Just now',
+        accessLevel: 'co-editor'
+      },
+      {
+        id: 'u-2',
+        initials: 'RA',
+        name: 'R. Adams',
+        role: 'Signal Processing Specialist',
+        institution: 'Scripps Oceanic',
+        isEditing: false,
+        presenceStatus: 'online',
+        currentAction: 'Reviewing piezoceramic test telemetry',
+        lastActiveTime: '2m ago',
+        accessLevel: 'co-editor'
+      },
+      {
+        id: 'u-3',
+        initials: 'EL',
+        name: 'Elena K.',
+        role: 'Postgraduate Fellow',
+        institution: 'Hadal Biosystems',
+        isEditing: false,
+        presenceStatus: 'idle',
+        currentAction: 'Viewing task progression matrix',
+        lastActiveTime: '14m ago',
+        accessLevel: 'commenter'
+      }
+    ],
+    blocks: [
+      {
+        id: 'blk-1',
+        content: 'Calibrate piezoceramic hydrophone response curve (-182 dB ref 1V/uPa)',
+        author: 'R. Adams',
+        initials: 'RA',
+        timestamp: '10:14 AM',
+        status: 'verified',
+        crdtVersion: 12
+      },
+      {
+        id: 'blk-2',
+        content: 'Incorporate seawater salinity attenuation alpha coefficient into Eq. 4.2',
+        author: 'Dr. Sarah Lin',
+        initials: 'LK',
+        timestamp: 'Just now',
+        status: 'editing',
+        crdtVersion: 15
+      },
+      {
+        id: 'blk-3',
+        content: 'Compile bibliography into shared Notion & Google Docs live block',
+        author: 'Elena K.',
+        initials: 'EL',
+        timestamp: '09:40 AM',
+        status: 'completed',
+        crdtVersion: 9
+      }
+    ]
+  },
+  {
+    id: 'collab-bento-2',
+    title: 'Collaborative Note Canvas: Signal Vocoder',
+    type: 'note_canvas',
+    isShared: true,
+    shareToken: 'atlauz-bento-token-3d8e5b0',
+    accessLevel: 'co-editor',
+    crdtClock: 98,
+    collaborators: [
+      {
+        id: 'u-1',
+        initials: 'LK',
+        name: 'Dr. Sarah Lin',
+        role: 'Visiting Faculty • Acoustic Lead',
+        institution: 'Woods Hole & MIT',
+        isEditing: false,
+        presenceStatus: 'online',
+        currentAction: 'Reviewing spectral resolution formulas',
+        lastActiveTime: '5m ago',
+        accessLevel: 'co-editor'
+      },
+      {
+        id: 'u-4',
+        initials: 'MC',
+        name: 'Marcus Chen',
+        role: 'Hardware Transducer Engineer',
+        institution: 'Tokyo Tech MechE',
+        isEditing: true,
+        presenceStatus: 'online',
+        activeBlockId: 'note-blk-2',
+        currentAction: 'Simulating tactile resonant impulse at 240Hz',
+        lastActiveTime: 'Just now',
+        accessLevel: 'co-editor'
+      }
+    ],
+    blocks: [
+      {
+        id: 'note-blk-1',
+        content: 'FFT frame window set to 2048 samples with 75% overlap for acoustic spectrogram smoothness.',
+        author: 'Dr. Sarah Lin',
+        initials: 'LK',
+        timestamp: '10:02 AM',
+        status: 'verified',
+        crdtVersion: 6
+      },
+      {
+        id: 'note-blk-2',
+        content: 'Tactile resonant frequency confirmed at 240Hz for LRA impulse latency under 0.8ms.',
+        author: 'Marcus Chen',
+        initials: 'MC',
+        timestamp: 'Just now',
+        status: 'editing',
+        crdtVersion: 8
+      }
+    ]
+  },
+  {
+    id: 'collab-bento-3',
+    title: 'Hadal Link & Deep Sources Vault',
+    type: 'link_vault',
+    isShared: true,
+    shareToken: 'atlauz-bento-token-a901ff4',
+    accessLevel: 'co-editor',
+    crdtClock: 34,
+    collaborators: [
+      {
+        id: 'u-2',
+        initials: 'RA',
+        name: 'R. Adams',
+        role: 'Signal Processing Specialist',
+        institution: 'Scripps Oceanic',
+        isEditing: false,
+        presenceStatus: 'online',
+        currentAction: 'Indexing oceanic open datasets',
+        lastActiveTime: '1h ago',
+        accessLevel: 'co-editor'
+      },
+      {
+        id: 'u-1',
+        initials: 'LK',
+        name: 'Dr. Sarah Lin',
+        role: 'Visiting Faculty • Acoustic Lead',
+        institution: 'Woods Hole & MIT',
+        isEditing: false,
+        presenceStatus: 'online',
+        currentAction: 'Bookmarking bathyal propagation papers',
+        lastActiveTime: '22m ago',
+        accessLevel: 'co-editor'
+      }
+    ],
+    blocks: [
+      {
+        id: 'link-1',
+        content: 'https://arxiv.org/abs/2403.09112 — Deep Trench Acoustic Scattering Models (Cited by 14)',
+        author: 'R. Adams',
+        initials: 'RA',
+        timestamp: 'Yesterday',
+        status: 'verified',
+        url: 'https://arxiv.org/abs/2403.09112',
+        category: 'Paper',
+        crdtVersion: 3
+      },
+      {
+        id: 'link-2',
+        content: 'https://github.com/ocean-acoustics-rust/mariana-core — Wasm FFT Synthesizer Engine v2.1',
+        author: 'You',
+        initials: 'YOU',
+        timestamp: 'Sep 24',
+        status: 'verified',
+        url: 'https://github.com/ocean-acoustics-rust/mariana-core',
+        category: 'Repository',
+        crdtVersion: 5
+      }
+    ]
+  }
+];
+
+export const initialRestDaysVault: RestDayVaultEntry[] = [
+  {
+    id: 'rest-1',
+    date: 'Sep 26, 2026',
+    triggerType: 'telemetry_fatigue_lock',
+    label: 'Cognitive Recovery & Circadian Realignment',
+    protectedStreakDay: 28,
+    sleepHours: 8.5,
+    wellnessHours: 2.5,
+    status: 'protected',
+    notes: 'Cognitive vital dropped to 72% after prolonged multi-modal sprint. Automatic freeze engaged to preserve 28-day habit loop.'
+  },
+  {
+    id: 'rest-2',
+    date: 'Sep 19, 2026',
+    triggerType: 'circadian_reset',
+    label: 'Deep Sleep & Sensory Detox Block',
+    protectedStreakDay: 21,
+    sleepHours: 9.0,
+    wellnessHours: 3.0,
+    status: 'protected',
+    notes: 'Scheduled restorative block post-sprint symposium. Anti-burnout guard activated without penalty.'
+  },
+  {
+    id: 'rest-3',
+    date: 'Sep 12, 2026',
+    triggerType: 'manual_schedule',
+    label: 'Symposium Buffer & Field Rest Day',
+    protectedStreakDay: 14,
+    sleepHours: 8.0,
+    wellnessHours: 4.0,
+    status: 'protected',
+    notes: 'Pre-planned travel day; zero cognitive task switches logged.'
+  }
+];
+
+export const initialScrapbookItems: ScrapbookItem[] = [
+  {
+    id: 'sb-1',
+    type: 'url',
+    title: 'arXiv:2403.09112 • Hadal Acoustic Propagation',
+    content: 'https://arxiv.org/abs/2403.09112',
+    domain: 'arxiv.org',
+    previewText: 'Empirical verification of ultrasonic acoustic duct scattering in Challenger Deep trench at 11,034 meters depth.',
+    stagedTime: '12m ago',
+    tags: ['Acoustics', 'Paper', 'Unfiled']
+  },
+  {
+    id: 'sb-2',
+    type: 'code',
+    title: 'Fast Fourier Window Normalization (Rust Wasm)',
+    content: `pub fn normalize_hadal_spectrum(bins: &mut [f32], salinity: f32) {\n    let alpha = 0.048 * (1.0 + (salinity - 35.0) * 0.02);\n    for (i, val) in bins.iter_mut().enumerate() {\n        *val *= (-alpha * (i as f32) * 0.001).exp();\n    }\n}`,
+    codeLanguage: 'rust',
+    stagedTime: '35m ago',
+    tags: ['Code', 'Wasm', 'Algorithms']
+  },
+  {
+    id: 'sb-3',
+    type: 'text',
+    title: 'Dr. Sarah Lin Symposium Feedback',
+    content: 'Review the hydrophone voltage calibration curve in Section 3.4 before the Friday faculty presentation. Ensure the salinity coefficient constant matches the 4°C isothermal bathyal oceanic data.',
+    stagedTime: '1h ago',
+    tags: ['Notes', 'Review']
+  },
+  {
+    id: 'sb-4',
+    type: 'voice',
+    title: 'Audio Memo: Circadian Cadence Check',
+    content: 'Dictated audio transcript: "Remember to lock the 45-minute sprint cadence before the evening writing block to keep streak protection intact."',
+    audioDuration: '0:42',
+    stagedTime: '3h ago',
+    tags: ['Voice', 'Cadence']
+  }
+];
+

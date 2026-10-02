@@ -276,3 +276,109 @@ export interface FocusCardItem {
   milestones?: Array<{ id: string; text: string; completed: boolean }>;
 }
 
+export interface CollaboratorBadge {
+  id: string;
+  initials: string;
+  name: string;
+  role?: string;
+  institution?: string;
+  isEditing: boolean;
+  presenceStatus?: 'online' | 'idle' | 'offline';
+  activeBlockId?: string;
+  currentAction?: string;
+  lastActiveTime: string;
+  accessLevel?: 'read-only' | 'commenter' | 'co-editor';
+}
+
+export interface CollaborativeBlockItem {
+  id: string;
+  content: string;
+  author: string;
+  initials: string;
+  timestamp: string;
+  status?: 'verified' | 'editing' | 'completed' | 'draft';
+  lastEditedBy?: string;
+  crdtVersion?: number;
+  category?: string;
+  url?: string;
+}
+
+export interface CollaborativeBentoTile {
+  id: string;
+  title: string;
+  type: 'task_board' | 'link_vault' | 'note_canvas';
+  isShared: boolean;
+  shareToken: string;
+  accessLevel: 'read-only' | 'commenter' | 'co-editor';
+  collaborators: CollaboratorBadge[];
+  crdtClock: number;
+  blocks: CollaborativeBlockItem[];
+}
+
+export interface CrdtOperation {
+  opId: string;
+  tileId: string;
+  type: 'INSERT_BLOCK' | 'UPDATE_BLOCK' | 'DELETE_BLOCK' | 'TOGGLE_STATUS' | 'PRESENCE_HEARTBEAT' | 'EDITING_STATUS';
+  clock: number;
+  clientId: string;
+  author: string;
+  initials: string;
+  payload: any;
+  timestamp: number;
+}
+
+export interface BentoSyncMessage {
+  type: 'CRDT_OP' | 'REQUEST_SYNC' | 'FULL_SYNC' | 'PEER_HEARTBEAT';
+  operation?: CrdtOperation;
+  tiles?: CollaborativeBentoTile[];
+  senderId: string;
+  timestamp: number;
+}
+
+export interface RestDayVaultEntry {
+  id: string;
+  date: string;
+  triggerType: 'manual_schedule' | 'circadian_reset' | 'telemetry_fatigue_lock' | 'wellness_recovery';
+  label: string;
+  protectedStreakDay: number;
+  sleepHours: number;
+  wellnessHours: number;
+  status: 'protected' | 'active_recovery';
+  notes: string;
+}
+
+export interface ScrapbookItem {
+  id: string;
+  type: 'url' | 'text' | 'code' | 'image' | 'voice';
+  title: string;
+  content: string;
+  domain?: string;
+  previewText?: string;
+  codeLanguage?: string;
+  audioDuration?: string;
+  stagedTime: string;
+  tags: string[];
+}
+
+export interface StudioDeckSlide {
+  id: string;
+  title: string;
+  layout: 'split_wireframe' | 'headline_metric' | 'bullet_grid' | 'full_canvas';
+  body: string;
+  notes: string;
+  metricValue?: string;
+  metricLabel?: string;
+  blocks: Array<{ id: string; type: 'heading' | 'paragraph' | 'grid_box' | 'code_snippet'; text: string }>;
+}
+
+export interface StudioDocument {
+  id: string;
+  title: string;
+  subtitle: string;
+  format: 'deck' | 'document';
+  slides: StudioDeckSlide[];
+  contentMarkdown: string;
+  updatedAt: string;
+}
+
+

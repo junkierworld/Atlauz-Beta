@@ -31,14 +31,18 @@ import {
   ChevronsRight,
   Check,
   Zap,
-  Sliders
+  Sliders,
+  Users
 } from 'lucide-react';
-import { ProjectItem, ResourceItem, FocusCardItem, FocusCardPurpose, UserRole } from '../types';
+import { ProjectItem, ResourceItem, FocusCardItem, FocusCardPurpose, UserRole, CollaborativeBentoTile } from '../types';
+import { initialCollaborativeBentoTiles } from '../data';
 import { FocusShiftIcon } from './FocusShiftIcon';
 import { FocusCardRenderer } from './FocusCardRenderer';
 import { FocusAddCardModal } from './FocusAddCardModal';
 import { RoboticCardsReorganizer, RoboticPhase } from './RoboticCardsReorganizer';
 import { FocusTransitionIntro } from './FocusTransitionIntro';
+import { CollaborativeBentoView } from './CollaborativeBentoView';
+import { SkeletonLoader } from './SkeletonLoader';
 import { roboticSound } from '../utils/roboticSound';
 import { isLightBackground, getAdaptiveTextColor } from '../utils/contrast';
 
@@ -50,6 +54,8 @@ interface WorkspaceViewProps {
   isDistractionFree: boolean;
   onToggleDistractionFree: (active?: boolean) => void;
   userRole?: UserRole;
+  collabBentoTiles?: CollaborativeBentoTile[];
+  onUpdateCollabBentoTiles?: (tiles: CollaborativeBentoTile[]) => void;
 }
 
 // 8 Tabs utilizing Monochrome Prototype Palette (Standard human working-memory chunking):
@@ -163,17 +169,50 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   onShowToast,
   isDistractionFree,
   onToggleDistractionFree,
-  userRole = 'Student'
+  userRole = 'Student',
+  collabBentoTiles,
+  onUpdateCollabBentoTiles
 }) => {
   // Up to 8 Tabs State
   const [cards, setCards] = useState<FocusCardItem[]>(DEFAULT_EIGHT_TABS);
   const [activeCardId, setActiveCardId] = useState<string>(DEFAULT_EIGHT_TABS[0].id);
 
-  // Layout View Modes: 'dominant' (Focus Shift) | 'pile' (Stacked Deck) | 'bento' (Adaptive Bento Grid)
-  const [viewMode, setViewMode] = useState<'dominant' | 'pile' | 'bento'>('dominant');
+  // Layout View Modes: 'dominant' (Focus Shift) | 'pile' (Stacked Deck) | 'bento' (Adaptive Bento Grid) | 'collab' (Shared Bento)
+  const [viewMode, setViewMode] = useState<'dominant' | 'pile' | 'bento' | 'collab'>('dominant');
+  const [bentoSubTab, setBentoSubTab] = useState<'adaptive' | 'collaborative'>('adaptive');
+
+  // Shared Bento CRDT tiles state
+  const [collabTiles, setCollabTiles] = useState<CollaborativeBentoTile[]>(
+    collabBentoTiles || initialCollaborativeBentoTiles
+  );
+
+  useEffect(() => {
+    if (collabBentoTiles) {
+      setCollabTiles(collabBentoTiles);
+    }
+  }, [collabBentoTiles]);
+
+  const handleUpdateCollabTiles = (nextTiles: CollaborativeBentoTile[]) => {
+    setCollabTiles(nextTiles);
+    if (onUpdateCollabBentoTiles) {
+      onUpdateCollabBentoTiles(nextTiles);
+    }
+  };
 
   // Add Tab Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [isLayoutTransitioning, setIsLayoutTransitioning] = useState<boolean>(false);
+
+  const handleSwitchViewMode = (mode: 'dominant' | 'pile' | 'bento' | 'collab') => {
+    if (viewMode !== mode) {
+      setIsLayoutTransitioning(true);
+      setViewMode(mode);
+      if (mode === 'bento') setBentoSubTab('adaptive');
+      if (mode === 'collab') setBentoSubTab('collaborative');
+      if (soundEnabled) roboticSound.play('dockClick');
+      setTimeout(() => setIsLayoutTransitioning(false), 200);
+    }
+  };
 
   // Focus Timer state (Pomodoro 25:00)
   const [timerSeconds, setTimerSeconds] = useState(25 * 60);
@@ -533,54 +572,83 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
           {/* Action strip: View Modes + Timer + No Distraction Button + Add Tab */}
           <div className="flex flex-wrap items-center gap-2 font-mono">
-            {/* View Mode Selector: Focus Shift | Stacked Pile | Bento Grid */}
-            <div className="flex items-center bg-neutral-950 p-0.5 rounded border border-neutral-800 text-xs">
+            {/* View Mode Selector: Focus Shift | Stacked Pile | Bento Grid | Collab Bento */}
+            <div
+              role="tablist"
+              aria-label="Workspace layout view modes"
+              className="flex items-center bg-neutral-950 p-1 rounded-md border border-neutral-800 text-xs"
+            >
               <button
+                role="tab"
+                aria-selected={viewMode === 'dominant'}
                 onClick={() => {
-                  setViewMode('dominant');
+                  handleSwitchViewMode('dominant');
                   onShowToast('Focus Shift View (Dominant + Dock)');
                 }}
-                className={`px-2 py-1 rounded transition-all flex items-center gap-1 ${
+                className={`min-touch-target px-3 py-1.5 rounded transition-all flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-white ${
                   viewMode === 'dominant'
-                    ? 'bg-white text-black font-bold'
+                    ? 'bg-white text-black font-bold ring-1 ring-white'
                     : 'text-neutral-400 hover:text-white'
                 }`}
                 title="Focus Shift: Single dominant card with compact tab dock"
               >
-                <Layers className="w-3 h-3" />
+                <Layers className="w-3.5 h-3.5" />
                 <span>Focus</span>
               </button>
 
               <button
+                role="tab"
+                aria-selected={viewMode === 'pile'}
                 onClick={() => {
-                  setViewMode('pile');
+                  handleSwitchViewMode('pile');
                   onShowToast('Browser Efficiency Stacked Card Pile');
                 }}
-                className={`px-2 py-1 rounded transition-all flex items-center gap-1 ${
+                className={`min-touch-target px-3 py-1.5 rounded transition-all flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-white ${
                   viewMode === 'pile'
-                    ? 'bg-white text-black font-bold'
+                    ? 'bg-white text-black font-bold ring-1 ring-white'
                     : 'text-neutral-400 hover:text-white'
                 }`}
                 title="Stacked Card Pile: Browser-efficient deck stacking with drag reordering"
               >
-                <Square className="w-3 h-3" />
+                <Square className="w-3.5 h-3.5" />
                 <span>Pile ({cards.length})</span>
               </button>
 
               <button
+                role="tab"
+                aria-selected={viewMode === 'bento'}
                 onClick={() => {
-                  setViewMode('bento');
+                  handleSwitchViewMode('bento');
                   onShowToast('Adaptive Bento Layout: Multi-tile overview');
                 }}
-                className={`px-2 py-1 rounded transition-all flex items-center gap-1 ${
-                  viewMode === 'bento'
-                    ? 'bg-white text-black font-bold'
+                className={`min-touch-target px-3 py-1.5 rounded transition-all flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-white ${
+                  viewMode === 'bento' && bentoSubTab === 'adaptive'
+                    ? 'bg-white text-black font-bold ring-1 ring-white'
                     : 'text-neutral-400 hover:text-white'
                 }`}
                 title="Adaptive Bento Mode: Arrange cards, telemetries, notes into a modular grid"
               >
-                <LayoutGrid className="w-3 h-3" />
+                <LayoutGrid className="w-3.5 h-3.5" />
                 <span>Bento</span>
+              </button>
+
+              <button
+                role="tab"
+                aria-selected={viewMode === 'collab'}
+                onClick={() => {
+                  handleSwitchViewMode('collab');
+                  onShowToast('Shared Bento Workspaces: Real-time CRDT Co-Presence');
+                }}
+                className={`min-touch-target px-3 py-1.5 rounded transition-all flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-white ${
+                  viewMode === 'collab' || (viewMode === 'bento' && bentoSubTab === 'collaborative')
+                    ? 'bg-white text-black font-bold ring-1 ring-white'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+                title="Shared Bento: Task board, note canvas, and reference vault with real-time CRDT co-presence"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Collab</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               </button>
             </div>
 
@@ -656,30 +724,51 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
           <div className="flex items-center gap-2 shrink-0 font-mono text-xs">
             {/* View Mode pills */}
-            <div className="flex items-center bg-neutral-950 p-0.5 rounded border border-neutral-800">
+            <div
+              role="tablist"
+              aria-label="Distraction free layout mode"
+              className="flex items-center bg-neutral-950 p-0.5 rounded border border-neutral-800"
+            >
               <button
-                onClick={() => setViewMode('dominant')}
-                className={`px-2 py-0.5 rounded text-[11px] ${
-                  viewMode === 'dominant' ? 'bg-white text-black font-bold' : 'text-neutral-400'
+                role="tab"
+                aria-selected={viewMode === 'dominant'}
+                onClick={() => handleSwitchViewMode('dominant')}
+                className={`min-touch-target px-2.5 py-1 rounded text-[11px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-white ${
+                  viewMode === 'dominant' ? 'bg-white text-black font-bold' : 'text-neutral-400 hover:text-white'
                 }`}
               >
                 Focus
               </button>
               <button
-                onClick={() => setViewMode('pile')}
-                className={`px-2 py-0.5 rounded text-[11px] ${
-                  viewMode === 'pile' ? 'bg-white text-black font-bold' : 'text-neutral-400'
+                role="tab"
+                aria-selected={viewMode === 'pile'}
+                onClick={() => handleSwitchViewMode('pile')}
+                className={`min-touch-target px-2.5 py-1 rounded text-[11px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-white ${
+                  viewMode === 'pile' ? 'bg-white text-black font-bold' : 'text-neutral-400 hover:text-white'
                 }`}
               >
                 Pile
               </button>
               <button
-                onClick={() => setViewMode('bento')}
-                className={`px-2 py-0.5 rounded text-[11px] ${
-                  viewMode === 'bento' ? 'bg-white text-black font-bold' : 'text-neutral-400'
+                role="tab"
+                aria-selected={viewMode === 'bento'}
+                onClick={() => handleSwitchViewMode('bento')}
+                className={`min-touch-target px-2.5 py-1 rounded text-[11px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-white ${
+                  viewMode === 'bento' && bentoSubTab === 'adaptive' ? 'bg-white text-black font-bold' : 'text-neutral-400 hover:text-white'
                 }`}
               >
                 Bento
+              </button>
+              <button
+                role="tab"
+                aria-selected={viewMode === 'collab'}
+                onClick={() => handleSwitchViewMode('collab')}
+                className={`min-touch-target px-2.5 py-1 rounded text-[11px] flex items-center justify-center gap-1 focus-visible:ring-2 focus-visible:ring-white ${
+                  viewMode === 'collab' || (viewMode === 'bento' && bentoSubTab === 'collaborative') ? 'bg-white text-black font-bold' : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <span>Collab</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               </button>
             </div>
 
@@ -708,30 +797,71 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       )}
 
       {/* ================================================================= */}
+      {/* SKELETON TRANSITION OR ACTIVE WORKSPACE MODE */}
+      {/* ================================================================= */}
+      {isLayoutTransitioning && (
+        <div className="w-full flex-1 p-4 sm:p-6 rounded-lg bg-neutral-900 border border-neutral-800 animate-fade-in">
+          <SkeletonLoader type="bento" label="Transitioning workspace layout..." />
+        </div>
+      )}
+
+      {/* ================================================================= */}
       {/* MODE A: BENTO MODE ("A little bit of everything arranged in an adaptive bento layout") */}
       {/* ================================================================= */}
-      {viewMode === 'bento' && (
+      {!isLayoutTransitioning && viewMode === 'bento' && (
         <div className="w-full flex-1 min-h-0 overflow-y-auto space-y-4 no-scrollbar pb-6 animate-fade-in">
-          {/* Top Quick Bar */}
-          <div className="flex items-center justify-between px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-lg text-xs font-mono">
+          {/* Top Quick Bar with Adaptive Grid vs Shared Bento (CRDT) sub-tabs */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 bg-neutral-900 border border-neutral-800 rounded-lg text-xs font-mono">
             <div className="flex items-center gap-2">
-              <LayoutGrid className="w-4 h-4 text-white" />
-              <span className="font-bold text-white">Adaptive Bento Layout</span>
-              <span className="text-neutral-500">• 8 Modular Tiles Synchronized</span>
+              <div className="flex items-center bg-neutral-950 p-0.5 rounded border border-neutral-800">
+                <button
+                  onClick={() => setBentoSubTab('adaptive')}
+                  className={`px-2.5 py-1 rounded transition-all flex items-center gap-1.5 ${
+                    bentoSubTab === 'adaptive'
+                      ? 'bg-white text-black font-bold'
+                      : 'text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span>Adaptive Grid</span>
+                </button>
+                <button
+                  onClick={() => setBentoSubTab('collaborative')}
+                  className={`px-2.5 py-1 rounded transition-all flex items-center gap-1.5 ${
+                    bentoSubTab === 'collaborative'
+                      ? 'bg-white text-black font-bold'
+                      : 'text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Shared Bento (CRDT)</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                </button>
+              </div>
+              <span className="text-neutral-500 hidden md:inline">• 3 Shared Modules Active</span>
             </div>
+
             <div className="flex items-center gap-2">
-              <span className="text-neutral-400">Current Role: {userRole}</span>
+              <span className="text-neutral-400">Role: {userRole}</span>
               <button
                 onClick={() => setViewMode('dominant')}
                 className="px-2 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700 text-xs"
               >
-                Expand Focused Card
+                Focus Card
               </button>
             </div>
           </div>
 
-          {/* Bento Grid Container */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4">
+          {bentoSubTab === 'collaborative' ? (
+            <CollaborativeBentoView
+              tiles={collabTiles}
+              onUpdateTiles={handleUpdateCollabTiles}
+              onShowToast={onShowToast}
+              isDistractionFree={isDistractionFree}
+            />
+          ) : (
+            /* Bento Grid Container */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4">
             {/* TILE 1: FOCAL TASK CARD (Span 8) */}
             <div className="lg:col-span-8 bg-neutral-900 border border-neutral-800 rounded-lg p-4 flex flex-col justify-between min-h-[380px] relative overflow-hidden">
               <div>
@@ -968,6 +1098,21 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
               </div>
             </div>
           </div>
+          )}
+        </div>
+      )}
+
+      {/* ================================================================= */}
+      {/* MODE D: STANDALONE SHARED BENTO WORKSPACES (CRDT & Co-Presence) */}
+      {/* ================================================================= */}
+      {!isLayoutTransitioning && viewMode === 'collab' && (
+        <div className="w-full flex-1 min-h-0 overflow-y-auto space-y-4 no-scrollbar pb-6 animate-fade-in">
+          <CollaborativeBentoView
+            tiles={collabTiles}
+            onUpdateTiles={handleUpdateCollabTiles}
+            onShowToast={onShowToast}
+            isDistractionFree={isDistractionFree}
+          />
         </div>
       )}
 
@@ -975,7 +1120,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       {/* MODE B: BROWSER EFFICIENCY STACKED CARD PILE ("PILE MODE") */}
       {/* Cards stacked up in a physical prototype pile that can be flipped & reordered */}
       {/* ================================================================= */}
-      {viewMode === 'pile' && (
+      {!isLayoutTransitioning && viewMode === 'pile' && (
         <div className="w-full flex-1 min-h-0 flex flex-col justify-between py-2 animate-fade-in font-sans">
           {/* Top Pile Deck HUD */}
           <div className="flex items-center justify-between px-4 py-2.5 bg-neutral-900 border border-neutral-800 rounded-lg text-xs font-mono mb-4">
@@ -1130,7 +1275,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       {/* ================================================================= */}
       {/* MODE C: CLASSIC FOCUS SHIFT (Dominant Card + Dock with Drag & Drop) */}
       {/* ================================================================= */}
-      {viewMode === 'dominant' && (
+      {!isLayoutTransitioning && viewMode === 'dominant' && (
         <div
           ref={stageContainerRef}
           className={`relative flex ${

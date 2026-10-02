@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   BookOpen,
   Book,
@@ -10,7 +11,10 @@ import {
   Plus,
   X,
   Pin,
-  Star
+  Star,
+  AlertCircle,
+  CheckCircle2,
+  Tag
 } from 'lucide-react';
 import { ResourceType, ResourceItem } from '../types';
 import { AVAILABLE_BADGES } from '../data';
@@ -22,15 +26,69 @@ interface CreateResourceModalProps {
   onShowToast: (msg: string) => void;
 }
 
-const RESOURCE_TYPES: Array<{ type: ResourceType; label: string; icon: any; color: string; desc: string }> = [
-  { type: 'notebook', label: 'Notebook', icon: BookOpen, color: '#ffffff', desc: 'Multi-page digital binder with tabs, bookmarks, and lab notes.' },
-  { type: 'document', label: 'Document', icon: FileText, color: '#e5e5e5', desc: 'Full document editor with outline, comments, formatting.' },
-  { type: 'presentation', label: 'Presentation', icon: Presentation, color: '#cccccc', desc: '16:9 canvas with slideshow mode and presenter notes.' },
-  { type: 'ebook', label: 'Ebook', icon: Book, color: '#a3a3a3', desc: 'Digital book reader with chapters, font controls, and sepia mode.' },
-  { type: 'lesson', label: 'Lesson', icon: GraduationCap, color: '#888888', desc: 'Course modules, syllabus checkpoints, and self-assessment quiz.' },
-  { type: 'notepad', label: 'Notepad', icon: FileCode, color: '#737373', desc: 'Minimalist scratchpad for quick markdown idea dumps & code.' },
-  { type: 'journal', label: 'Journal', icon: Heart, color: '#525252', desc: 'Mindful daily reflection with mood check-ins & private vault lock.' },
-  { type: 'pdf', label: 'PDF Document', icon: FileText, color: '#262626', desc: 'Interactive PDF viewer with highlighter annotations and search.' }
+const RESOURCE_TYPES: Array<{
+  type: ResourceType;
+  label: string;
+  icon: any;
+  color: string;
+  desc: string;
+}> = [
+  {
+    type: 'notebook',
+    label: 'Notebook',
+    icon: BookOpen,
+    color: '#ffffff',
+    desc: 'Multi-page digital binder with tabs, bookmarks, and lab notes.'
+  },
+  {
+    type: 'document',
+    label: 'Document',
+    icon: FileText,
+    color: '#e5e5e5',
+    desc: 'Full document editor with outline, comments, formatting.'
+  },
+  {
+    type: 'presentation',
+    label: 'Presentation',
+    icon: Presentation,
+    color: '#cccccc',
+    desc: '16:9 canvas with slideshow mode and presenter notes.'
+  },
+  {
+    type: 'ebook',
+    label: 'Ebook',
+    icon: Book,
+    color: '#a3a3a3',
+    desc: 'Digital book reader with chapters, font controls, and sepia mode.'
+  },
+  {
+    type: 'lesson',
+    label: 'Lesson',
+    icon: GraduationCap,
+    color: '#888888',
+    desc: 'Course modules, syllabus checkpoints, and self-assessment quiz.'
+  },
+  {
+    type: 'notepad',
+    label: 'Notepad',
+    icon: FileCode,
+    color: '#737373',
+    desc: 'Minimalist scratchpad for quick markdown idea dumps & code.'
+  },
+  {
+    type: 'journal',
+    label: 'Journal',
+    icon: Heart,
+    color: '#525252',
+    desc: 'Mindful daily reflection with mood check-ins & private vault lock.'
+  },
+  {
+    type: 'pdf',
+    label: 'PDF Document',
+    icon: FileText,
+    color: '#262626',
+    desc: 'Interactive PDF viewer with highlighter annotations and search.'
+  }
 ];
 
 export const CreateResourceModal: React.FC<CreateResourceModalProps> = ({
@@ -48,26 +106,59 @@ export const CreateResourceModal: React.FC<CreateResourceModalProps> = ({
   const [isPinned, setIsPinned] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
 
+  // Field validation and touched states
+  const [touched, setTouched] = useState<{ title?: boolean; category?: boolean }>({});
+
   if (!isOpen) return null;
+
+  // Real-time validation rules
+  const getTitleError = (): string | null => {
+    if (!touched.title) return null;
+    const trimmed = title.trim();
+    if (!trimmed) {
+      return 'Title is required. Please provide a title for this volume.';
+    }
+    if (trimmed.length < 3) {
+      return `Title must contain at least 3 characters (currently ${trimmed.length}).`;
+    }
+    if (trimmed.length > 80) {
+      return `Title must be under 80 characters (currently ${trimmed.length}).`;
+    }
+    return null;
+  };
+
+  const titleError = getTitleError();
+  const isTitleValid = touched.title && !titleError && title.trim().length >= 3;
+
+  // Real-time parsed tags preview
+  const parsedTags = tagsInput
+    ? tagsInput.split(',').map(t => t.trim()).filter(Boolean)
+    : [];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      onShowToast('Please enter a title');
+    setTouched({ title: true, category: true });
+
+    if (!title.trim() || title.trim().length < 3) {
+      onShowToast('Please provide a valid title (minimum 3 characters)');
       return;
     }
 
     const typeConfig = RESOURCE_TYPES.find(t => t.type === selectedType);
-    const tags = tagsInput
-      ? tagsInput.split(',').map(t => t.trim()).filter(Boolean)
-      : ['Workspace', selectedType];
+    const tags = parsedTags.length > 0 ? parsedTags : ['Workspace', selectedType];
 
     let metadata: any = {};
     if (selectedType === 'notebook') {
       metadata = {
         activePageIndex: 0,
         pages: [
-          { id: `p-${Date.now()}-1`, title: 'Page 1: Introduction', content: 'Begin taking structured notes...', badge: selectedBadge, isBookmarked: true }
+          {
+            id: `p-${Date.now()}-1`,
+            title: 'Page 1: Introduction',
+            content: 'Begin taking structured notes...',
+            badge: selectedBadge,
+            isBookmarked: true
+          }
         ]
       };
     } else if (selectedType === 'document') {
@@ -105,8 +196,16 @@ export const CreateResourceModal: React.FC<CreateResourceModalProps> = ({
         fontSize: 'base',
         sepiaMode: false,
         chapters: [
-          { id: 'ch-1', title: 'Chapter 1: Principles of Autonomous Systems', content: 'In autonomous telemetry systems, noise cancellation must be coupled with human tactile intuition.' },
-          { id: 'ch-2', title: 'Chapter 2: Signal Transduction & Spatial Buffering', content: 'When multi-sensory signals converge, latency below 12 milliseconds produces perceived simultaneity.' }
+          {
+            id: 'ch-1',
+            title: 'Chapter 1: Principles of Autonomous Systems',
+            content: 'In autonomous telemetry systems, noise cancellation must be coupled with human tactile intuition.'
+          },
+          {
+            id: 'ch-2',
+            title: 'Chapter 2: Signal Transduction & Spatial Buffering',
+            content: 'When multi-sensory signals converge, latency below 12 milliseconds produces perceived simultaneity.'
+          }
         ]
       };
     } else if (selectedType === 'lesson') {
@@ -160,43 +259,64 @@ export const CreateResourceModal: React.FC<CreateResourceModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/85 font-sans">
-      <div className="bg-neutral-900 text-white border border-neutral-700 rounded-lg shadow-2xl w-full max-w-lg p-5 flex flex-col max-h-[90vh] overflow-y-auto animate-fade-in">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/85 font-sans"
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 8 }}
+        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+        className="bg-neutral-900 text-white border border-neutral-700 rounded-lg shadow-2xl w-full max-w-lg p-5 flex flex-col max-h-[90vh] overflow-y-auto animate-fade-in"
+      >
         {/* Modal Header */}
         <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded bg-white text-black flex items-center justify-center font-bold">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded bg-white text-black flex items-center justify-center font-bold shrink-0">
               <Plus className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-bold text-sm sm:text-base text-white font-mono uppercase">[Create New Resource]</h3>
-              <p className="text-[11px] text-neutral-400">Add notebook, doc, presentation, lesson, or journal</p>
+              <h3 id="create-modal-title" className="font-bold text-sm sm:text-base text-white font-mono uppercase tracking-tight">
+                [Create New Resource]
+              </h3>
+              <p className="text-[11px] text-neutral-400">
+                Add notebook, doc, presentation, lesson, or journal
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded text-neutral-400 hover:text-white font-mono text-xs">
-            [X]
+          <button
+            onClick={onClose}
+            aria-label="Close modal dialog"
+            className="min-touch-target p-2 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 font-mono text-xs flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-white"
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-4" noValidate>
           {/* Resource Type Grid */}
           <div>
             <label className="text-xs font-bold text-neutral-300 uppercase tracking-wider block mb-2 font-mono">
               [Select Resource Type]
             </label>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2" role="radiogroup" aria-label="Select resource type">
               {RESOURCE_TYPES.map(t => {
                 const Icon = t.icon;
                 const isSelected = selectedType === t.type;
                 return (
                   <button
                     type="button"
+                    role="radio"
+                    aria-checked={isSelected}
                     key={t.type}
                     onClick={() => setSelectedType(t.type)}
-                    className={`p-2.5 rounded border flex flex-col items-center justify-center gap-1.5 transition-all text-center ${
+                    className={`min-touch-target p-2.5 rounded border flex flex-col items-center justify-center gap-1.5 transition-all text-center focus-visible:ring-2 focus-visible:ring-white ${
                       isSelected
-                        ? 'bg-neutral-800 border-white text-white font-bold'
-                        : 'bg-black border-neutral-800 text-neutral-400 hover:border-neutral-600'
+                        ? 'bg-neutral-800 border-white text-white font-bold ring-1 ring-white/40'
+                        : 'bg-black border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:text-neutral-200'
                     }`}
                   >
                     <Icon className="w-4 h-4 text-white" />
@@ -207,48 +327,101 @@ export const CreateResourceModal: React.FC<CreateResourceModalProps> = ({
             </div>
           </div>
 
-          {/* Title Input */}
+          {/* Title Input with Real-time Inline Validation */}
           <div>
-            <label className="text-xs font-bold text-neutral-300 uppercase tracking-wider block mb-1 font-mono">
-              [Title]
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Cognitive Systems Lab Notes, Chapter 4 Pitch..."
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              className="w-full bg-black border border-neutral-700 rounded px-3 py-2 text-xs sm:text-sm text-white placeholder-neutral-500 focus:border-white outline-none"
-            />
+            <div className="flex items-center justify-between mb-1">
+              <label htmlFor="resource-title-input" className="text-xs font-bold text-neutral-300 uppercase tracking-wider font-mono">
+                [Title] <span className="text-neutral-400">*</span>
+              </label>
+              {title.length > 0 && (
+                <span className={`text-[10px] font-mono ${title.length > 80 ? 'text-red-400' : 'text-neutral-500'}`}>
+                  {title.length}/80
+                </span>
+              )}
+            </div>
+
+            <div className="relative">
+              <input
+                id="resource-title-input"
+                type="text"
+                required
+                aria-required="true"
+                aria-invalid={!!titleError}
+                aria-describedby={titleError ? 'title-validation-error' : undefined}
+                placeholder="e.g. Cognitive Systems Lab Notes, Chapter 4 Pitch..."
+                value={title}
+                onBlur={() => setTouched(prev => ({ ...prev, title: true }))}
+                onChange={e => {
+                  setTitle(e.target.value);
+                  if (!touched.title) setTouched(prev => ({ ...prev, title: true }));
+                }}
+                className={`w-full bg-black border rounded px-3 py-2.5 text-xs sm:text-sm text-white placeholder-neutral-500 outline-none transition-colors min-h-[44px] focus-visible:ring-2 focus-visible:ring-white ${
+                  titleError
+                    ? 'border-red-500 focus:border-red-400'
+                    : isTitleValid
+                    ? 'border-white/80 focus:border-white'
+                    : 'border-neutral-700 focus:border-white'
+                }`}
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                {titleError && <AlertCircle className="w-4 h-4 text-red-400" />}
+                {isTitleValid && <CheckCircle2 className="w-4 h-4 text-white" />}
+              </div>
+            </div>
+
+            {/* Human-readable error / instruction message */}
+            {titleError && (
+              <p id="title-validation-error" className="text-[11px] text-red-400 mt-1.5 flex items-center gap-1 font-mono animate-fade-in">
+                <span>{titleError}</span>
+              </p>
+            )}
           </div>
 
           {/* Category & Course */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-neutral-300 uppercase tracking-wider block mb-1 font-mono">
+              <label htmlFor="resource-category-input" className="text-xs font-bold text-neutral-300 uppercase tracking-wider block mb-1 font-mono">
                 [Category / Course]
               </label>
               <input
+                id="resource-category-input"
                 type="text"
                 placeholder="e.g. COGS-492, Research"
                 value={category}
                 onChange={e => setCategory(e.target.value)}
-                className="w-full bg-black border border-neutral-700 rounded px-3 py-2 text-xs text-white placeholder-neutral-500 focus:border-white outline-none"
+                className="w-full bg-black border border-neutral-700 rounded px-3 py-2 text-xs text-white placeholder-neutral-500 focus:border-white outline-none min-h-[44px] focus-visible:ring-2 focus-visible:ring-white"
               />
             </div>
+
             <div>
-              <label className="text-xs font-bold text-neutral-300 uppercase tracking-wider block mb-1 font-mono">
-                [Tags]
+              <label htmlFor="resource-tags-input" className="text-xs font-bold text-neutral-300 uppercase tracking-wider block mb-1 font-mono">
+                [Tags] <span className="text-[10px] text-neutral-500 font-normal lowercase">(comma separated)</span>
               </label>
               <input
+                id="resource-tags-input"
                 type="text"
                 placeholder="e.g. Thesis, Neural, Sprint"
                 value={tagsInput}
                 onChange={e => setTagsInput(e.target.value)}
-                className="w-full bg-black border border-neutral-700 rounded px-3 py-2 text-xs text-white placeholder-neutral-500 focus:border-white outline-none"
+                className="w-full bg-black border border-neutral-700 rounded px-3 py-2 text-xs text-white placeholder-neutral-500 focus:border-white outline-none min-h-[44px] focus-visible:ring-2 focus-visible:ring-white"
               />
             </div>
           </div>
+
+          {/* Real-time Parsed Tags Indicator */}
+          {parsedTags.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-mono text-neutral-400">
+              <span className="flex items-center gap-1 text-neutral-500">
+                <Tag className="w-3 h-3" />
+                Parsed tags:
+              </span>
+              {parsedTags.map((tag, i) => (
+                <span key={i} className="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-200 border border-neutral-700">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Initial Status Badge Picker */}
           <div>
@@ -261,7 +434,7 @@ export const CreateResourceModal: React.FC<CreateResourceModalProps> = ({
                   type="button"
                   key={b.id}
                   onClick={() => setSelectedBadge(b.label)}
-                  className={`px-2.5 py-1 rounded border text-xs font-mono transition-all ${
+                  className={`min-touch-target px-3 py-1.5 rounded border text-xs font-mono transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-white ${
                     selectedBadge === b.label
                       ? 'bg-white text-black border-white font-bold'
                       : 'bg-black border-neutral-800 text-neutral-400 hover:border-neutral-600'
@@ -278,10 +451,11 @@ export const CreateResourceModal: React.FC<CreateResourceModalProps> = ({
             <button
               type="button"
               onClick={() => setIsPinned(!isPinned)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-semibold transition-all ${
+              aria-pressed={isPinned}
+              className={`min-touch-target flex items-center justify-center gap-1.5 px-3.5 py-2 rounded border text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-white ${
                 isPinned
                   ? 'bg-neutral-800 border-white text-white'
-                  : 'bg-black border-neutral-800 text-neutral-400'
+                  : 'bg-black border-neutral-800 text-neutral-400 hover:text-white'
               }`}
             >
               <Pin className="w-3.5 h-3.5 fill-current" />
@@ -291,10 +465,11 @@ export const CreateResourceModal: React.FC<CreateResourceModalProps> = ({
             <button
               type="button"
               onClick={() => setIsFavorite(!isFavorite)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-semibold transition-all ${
+              aria-pressed={isFavorite}
+              className={`min-touch-target flex items-center justify-center gap-1.5 px-3.5 py-2 rounded border text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-white ${
                 isFavorite
                   ? 'bg-neutral-800 border-white text-white'
-                  : 'bg-black border-neutral-800 text-neutral-400'
+                  : 'bg-black border-neutral-800 text-neutral-400 hover:text-white'
               }`}
             >
               <Star className="w-3.5 h-3.5 fill-current" />
@@ -303,24 +478,24 @@ export const CreateResourceModal: React.FC<CreateResourceModalProps> = ({
           </div>
 
           {/* Submit Action */}
-          <div className="pt-3 border-t border-neutral-800 flex justify-end gap-2 font-mono">
+          <div className="pt-3 border-t border-neutral-800 flex justify-end gap-2.5 font-mono">
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-2 rounded text-xs font-semibold text-neutral-400 hover:text-white"
+              className="min-touch-target px-4 py-2 rounded text-xs font-semibold text-neutral-400 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-white"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded bg-white text-black font-bold text-xs hover:bg-neutral-200 flex items-center gap-1.5 active:scale-95 transition-all"
+              className="min-touch-target px-5 py-2 rounded bg-white text-black font-bold text-xs hover:bg-neutral-200 flex items-center gap-1.5 active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-white"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 text-black" />
               <span>CREATE & OPEN</span>
             </button>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 };

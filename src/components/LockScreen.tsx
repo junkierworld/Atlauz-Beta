@@ -73,25 +73,39 @@ export const LockScreen: React.FC<LockScreenProps> = ({ username, onUnlock, onSh
           <div className="flex-1 h-px bg-neutral-800" />
         </div>
 
-        {/* PIN Entry Fallback */}
-        <form onSubmit={handlePinSubmit} className="w-full flex gap-2">
-          <div className="relative flex-1">
-            <KeyRound className="w-4 h-4 text-neutral-500 absolute left-3 top-2.5" />
-            <input
-              type="password"
-              placeholder="PIN (4+ digits)"
-              maxLength={6}
-              value={pin}
-              onChange={e => setPin(e.target.value)}
-              className="w-full bg-neutral-950 text-white text-xs pl-9 pr-3 py-2 rounded border border-neutral-700 focus:outline-none focus:border-white font-mono"
-            />
+        {/* PIN Entry Fallback with Inline Validation */}
+        <form onSubmit={handlePinSubmit} className="w-full flex flex-col gap-1.5 text-left">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <KeyRound className="w-4 h-4 text-neutral-500 absolute left-3 top-3.5 pointer-events-none" />
+              <input
+                id="lock-pin-input"
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="4-digit PIN (e.g. 1234)"
+                maxLength={6}
+                value={pin}
+                aria-invalid={pin.length > 0 && pin.length < 4}
+                aria-describedby={pin.length > 0 && pin.length < 4 ? 'pin-error-desc' : undefined}
+                onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
+                className="w-full min-h-[44px] bg-neutral-950 text-white text-xs pl-9 pr-3 py-2.5 rounded border border-neutral-700 focus:outline-none focus:border-white font-mono focus-visible:ring-2 focus-visible:ring-white"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={pin.length < 4}
+              aria-label="Submit PIN to unlock vault"
+              className="min-h-[44px] min-w-[44px] px-3.5 rounded bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-xs active:scale-95 transition-all border border-neutral-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center focus-visible:ring-2 focus-visible:ring-white"
+            >
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            type="submit"
-            className="px-3 py-2 rounded bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-xs active:scale-95 transition-all border border-neutral-600"
-          >
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          {pin.length > 0 && pin.length < 4 && (
+            <p id="pin-error-desc" className="text-[11px] text-red-400 font-mono mt-0.5">
+              PIN must contain at least 4 numeric digits ({pin.length}/4 entered).
+            </p>
+          )}
         </form>
       </div>
     </div>

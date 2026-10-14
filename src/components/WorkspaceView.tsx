@@ -28,6 +28,8 @@ import {
   GraduationCap,
   Copy,
   ChevronLeft,
+  ChevronUp,
+  ChevronDown,
   ChevronsRight,
   Check,
   Zap,
@@ -36,6 +38,7 @@ import {
 } from 'lucide-react';
 import { ProjectItem, ResourceItem, FocusCardItem, FocusCardPurpose, UserRole, CollaborativeBentoTile } from '../types';
 import { initialCollaborativeBentoTiles } from '../data';
+import { FULLER_WORKSPACE_TOOL_TAB_COLORS } from '../themes';
 import { FocusShiftIcon } from './FocusShiftIcon';
 import { FocusCardRenderer } from './FocusCardRenderer';
 import { FocusAddCardModal } from './FocusAddCardModal';
@@ -536,32 +539,34 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       }`}
     >
       {/* ================================================================= */}
-      {/* WORKSPACE HEADER / CONTROLS (Standard Mode) */}
+      {/* WORKSPACE HEADER / CONTROLS (Standard Mode - Compact 2x2 Selector) */}
       {/* ================================================================= */}
       {!isDistractionFree && (
-        <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 font-sans">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded border border-neutral-700 bg-neutral-800 flex items-center justify-center text-white shrink-0">
-              <Layers className="w-5 h-5" />
+        <div
+          style={{
+            background: 'var(--theme-card-gradient, #121212)',
+            borderColor: 'var(--theme-card-border, #404040)'
+          }}
+          className="rounded-xl border-2 p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-sans shadow-xl transition-all duration-300"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-lg border border-neutral-700 bg-neutral-950 flex items-center justify-center text-white shrink-0">
+              <Layers className="w-4 h-4" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700 uppercase">
                   [{project.code}]
                 </span>
-                <h1 className="text-base sm:text-lg font-bold text-white tracking-tight font-mono">
+                <h1 className="text-sm sm:text-base font-bold text-white tracking-tight font-mono truncate">
                   {project.title}
                 </h1>
-                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700 uppercase">
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700 uppercase hidden xs:inline">
                   {userRole}
                 </span>
               </div>
-              <p className="text-xs text-neutral-400 mt-0.5 flex items-center gap-2">
-                <span className="font-mono text-neutral-300">{cards.length}/8 Tabs</span>
-                <span>•</span>
-                <span className="text-[10px] font-mono text-neutral-400">
-                  {isLandscape ? 'Landscape (Left Vertical Dock)' : 'Portrait (Top Tab Bar)'}
-                </span>
+              <p className="text-[11px] text-neutral-400 mt-0.5 flex items-center gap-2">
+                <span className="font-mono text-neutral-300">{cards.length}/8 Tabs Active</span>
                 <span>•</span>
                 <span className="text-[10px] text-neutral-400 hidden sm:inline">
                   Drag tabs to reorder
@@ -570,13 +575,13 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             </div>
           </div>
 
-          {/* Action strip: View Modes + Timer + No Distraction Button + Add Tab */}
-          <div className="flex flex-wrap items-center gap-2 font-mono">
-            {/* View Mode Selector: Focus Shift | Stacked Pile | Bento Grid | Collab Bento */}
+          {/* Action strip: 2x2 Compact Mode Grid + Add Tab */}
+          <div className="flex items-center gap-2 font-mono shrink-0 self-stretch sm:self-auto justify-between sm:justify-end">
+            {/* View Mode Selector: 2 Columns x 2 Rows Compact Grid */}
             <div
               role="tablist"
               aria-label="Workspace layout view modes"
-              className="flex items-center bg-neutral-950 p-1 rounded-md border border-neutral-800 text-xs"
+              className="grid grid-cols-2 gap-1 bg-neutral-950 p-1 rounded-lg border border-neutral-800 text-xs"
             >
               <button
                 role="tab"
@@ -585,12 +590,12 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                   handleSwitchViewMode('dominant');
                   onShowToast('Focus Shift View (Dominant + Dock)');
                 }}
-                className={`min-touch-target px-3 py-1.5 rounded transition-all flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-white ${
+                className={`min-touch-target px-2.5 py-1 rounded transition-all flex items-center justify-center gap-1.5 text-xs ${
                   viewMode === 'dominant'
                     ? 'bg-white text-black font-bold ring-1 ring-white'
                     : 'text-neutral-400 hover:text-white'
                 }`}
-                title="Focus Shift: Single dominant card with compact tab dock"
+                title="Focus: Single dominant card with compact tab dock"
               >
                 <Layers className="w-3.5 h-3.5" />
                 <span>Focus</span>
@@ -603,15 +608,15 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                   handleSwitchViewMode('pile');
                   onShowToast('Browser Efficiency Stacked Card Pile');
                 }}
-                className={`min-touch-target px-3 py-1.5 rounded transition-all flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-white ${
+                className={`min-touch-target px-2.5 py-1 rounded transition-all flex items-center justify-center gap-1.5 text-xs ${
                   viewMode === 'pile'
                     ? 'bg-white text-black font-bold ring-1 ring-white'
                     : 'text-neutral-400 hover:text-white'
                 }`}
-                title="Stacked Card Pile: Browser-efficient deck stacking with drag reordering"
+                title="Pile: Stacked deck with hover elevation and drag reordering"
               >
                 <Square className="w-3.5 h-3.5" />
-                <span>Pile ({cards.length})</span>
+                <span>Pile</span>
               </button>
 
               <button
@@ -619,14 +624,14 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 aria-selected={viewMode === 'bento'}
                 onClick={() => {
                   handleSwitchViewMode('bento');
-                  onShowToast('Adaptive Bento Layout: Multi-tile overview');
+                  onShowToast('Adaptive Bento Layout');
                 }}
-                className={`min-touch-target px-3 py-1.5 rounded transition-all flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-white ${
+                className={`min-touch-target px-2.5 py-1 rounded transition-all flex items-center justify-center gap-1.5 text-xs ${
                   viewMode === 'bento' && bentoSubTab === 'adaptive'
                     ? 'bg-white text-black font-bold ring-1 ring-white'
                     : 'text-neutral-400 hover:text-white'
                 }`}
-                title="Adaptive Bento Mode: Arrange cards, telemetries, notes into a modular grid"
+                title="Bento: Modular tile layout"
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
                 <span>Bento</span>
@@ -637,68 +642,29 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 aria-selected={viewMode === 'collab'}
                 onClick={() => {
                   handleSwitchViewMode('collab');
-                  onShowToast('Shared Bento Workspaces: Real-time CRDT Co-Presence');
+                  onShowToast('Shared Bento Workspaces');
                 }}
-                className={`min-touch-target px-3 py-1.5 rounded transition-all flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-white ${
+                className={`min-touch-target px-2.5 py-1 rounded transition-all flex items-center justify-center gap-1 text-xs ${
                   viewMode === 'collab' || (viewMode === 'bento' && bentoSubTab === 'collaborative')
                     ? 'bg-white text-black font-bold ring-1 ring-white'
                     : 'text-neutral-400 hover:text-white'
                 }`}
-                title="Shared Bento: Task board, note canvas, and reference vault with real-time CRDT co-presence"
+                title="Collab: Shared real-time CRDT tiles"
               >
                 <Users className="w-3.5 h-3.5" />
                 <span>Collab</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               </button>
             </div>
-
-            {/* Focus Sprint Timer */}
-            <div className="flex items-center gap-2 bg-neutral-950 border border-neutral-800 px-2.5 py-1.5 rounded text-xs">
-              <Clock className="w-3.5 h-3.5 text-neutral-400" />
-              <span className="font-mono font-bold text-white tabular-nums">
-                {formatTimer(timerSeconds)}
-              </span>
-              <button
-                onClick={() => setIsTimerRunning(!isTimerRunning)}
-                className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 text-white"
-                title={isTimerRunning ? 'Pause' : 'Start Focus Timer'}
-              >
-                {isTimerRunning ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-              </button>
-              <button
-                onClick={() => {
-                  setIsTimerRunning(false);
-                  setTimerSeconds(25 * 60);
-                }}
-                className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white"
-                title="Reset to 25:00"
-              >
-                <RotateCcw className="w-3 h-3" />
-              </button>
-            </div>
-
-            {/* THE PROMINENT "NEXT TO NO DISTRACTION" BUTTON */}
-            <button
-              id="btnNoDistraction"
-              onClick={() => onToggleDistractionFree(true)}
-              className="px-3 py-1.5 rounded bg-white hover:bg-neutral-200 text-black font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95"
-              title="Enter Next to No Distraction Mode (Full screen, Esc to exit, 1-8 keys to switch)"
-            >
-              <FocusShiftIcon size={16} active={true} />
-              <div className="text-left">
-                <span className="block leading-none">No Distraction</span>
-              </div>
-            </button>
 
             {/* Add Tab Button (Up to 8) */}
             {cards.length < 8 && (
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="px-2.5 py-1.5 rounded bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white text-xs font-bold flex items-center gap-1 transition-all"
+                className="min-touch-target px-3 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all"
                 title="Add Focus Tab (Up to 8 tabs)"
               >
                 <Plus className="w-3.5 h-3.5 text-white" />
-                <span className="hidden sm:inline">Add Tab ({cards.length}/8)</span>
+                <span className="hidden sm:inline">Add Tab</span>
               </button>
             )}
           </div>
@@ -1126,8 +1092,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
           <div className="flex items-center justify-between px-4 py-2.5 bg-neutral-900 border border-neutral-800 rounded-lg text-xs font-mono mb-4">
             <div className="flex items-center gap-2">
               <Square className="w-4 h-4 text-white" />
-              <span className="font-bold text-white">Browser Stack Pile ({cards.length} Cards in Deck)</span>
-              <span className="text-neutral-500 hidden sm:inline">• Drag & drop to reorder stack</span>
+              <span className="font-bold text-white">Browser Stack Pile</span>
+              <span className="text-neutral-500 hidden sm:inline">• Drag & drop or use Bring Up / Send Down</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -1156,19 +1122,34 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             </div>
           </div>
 
-          {/* Physical 3D Stacked Pile Container */}
-          <div className="relative flex-1 min-h-[460px] flex items-center justify-center p-4">
-            <div className="relative w-full max-w-2xl h-[420px]">
+          {/* Physical 3D Stacked Pile Container with Spaced Out Depth & Hover Physics */}
+          <div className="relative flex-1 min-h-[500px] flex items-center justify-center p-4">
+            <div className="relative w-full max-w-2xl h-[460px]">
               {cards.map((card, index) => {
                 const isActive = card.id === dominantCard.id;
                 // Compute offset in stack: active is on top
                 const activeIndex = cards.findIndex(c => c.id === dominantCard.id);
                 const stackDistance = (index - activeIndex + cards.length) % cards.length;
-                const isTopThree = stackDistance < 4;
+                const isTopFour = stackDistance < 5;
 
-                const topOffset = stackDistance * 12;
-                const scale = Math.max(0.85, 1 - stackDistance * 0.04);
-                const zIndex = 20 - stackDistance;
+                const topOffset = stackDistance * 26; // More spaced out
+                const scale = Math.max(0.82, 1 - stackDistance * 0.035);
+                const zIndex = 25 - stackDistance;
+
+                const handleBringForward = (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  setActiveCardId(card.id);
+                  if (soundEnabled) roboticSound.play('dockClick');
+                  onShowToast(`Elevated "${card.title}" to top of pile`);
+                };
+
+                const handlePushBack = (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  const nextIndex = (index + 1) % cards.length;
+                  setActiveCardId(cards[nextIndex].id);
+                  if (soundEnabled) roboticSound.play('dockClick');
+                  onShowToast(`Sent "${card.title}" down in stack`);
+                };
 
                 return (
                   <motion.div
@@ -1185,38 +1166,55 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                       top: topOffset,
                       scale: scale,
                       zIndex: zIndex,
-                      opacity: isTopThree ? 1 : 0.3
+                      opacity: isTopFour ? 1 : 0.25
                     }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                    className={`absolute inset-x-0 mx-auto w-full h-[360px] rounded-lg border p-4 sm:p-5 cursor-pointer shadow-2xl transition-colors ${
+                    transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+                    className={`absolute inset-x-0 mx-auto w-full h-[360px] rounded-xl border p-4 sm:p-5 cursor-pointer shadow-2xl transition-all duration-200 hover:-translate-y-3 hover:shadow-[0_20px_35px_-5px_rgba(0,0,0,0.8)] ${
                       isActive
-                        ? 'bg-neutral-900 border-white ring-1 ring-white/40'
-                        : 'bg-neutral-950 border-neutral-700 hover:border-neutral-500'
+                        ? 'bg-neutral-900 border-white ring-1 ring-white/50'
+                        : 'bg-neutral-950 border-neutral-700 hover:border-neutral-400'
                     } ${dragOverCardId === card.id ? 'ring-2 ring-white' : ''}`}
                   >
-                    {/* Header Strip */}
+                    {/* Header Strip with Hover Up/Down Clickable Options */}
                     <div className="flex items-center justify-between border-b border-neutral-800 pb-2 mb-3 font-mono text-xs">
                       <div className="flex items-center gap-2">
                         <GripVertical className="w-3.5 h-3.5 text-neutral-500 cursor-grab" />
                         <span className="font-bold text-white uppercase">
-                          [{index + 1}/8] {card.purpose}
+                          {card.purpose}
                         </span>
-                        <span className="text-neutral-400 hidden xs:inline">{card.title}</span>
+                        <span className="text-neutral-400 hidden xs:inline truncate max-w-[200px]">{card.title}</span>
                       </div>
-                      <div className="flex items-center gap-2">
+
+                      {/* Clickable Hover Up & Down Controls */}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={handleBringForward}
+                          className="px-2 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white text-[10px] font-bold border border-neutral-700 flex items-center gap-1 transition-all"
+                          title="Hover Up: Bring this card to front of pile"
+                        >
+                          <ChevronUp className="w-3 h-3" />
+                          <span>Bring Up</span>
+                        </button>
+
+                        <button
+                          onClick={handlePushBack}
+                          className="px-2 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white text-[10px] font-bold border border-neutral-700 flex items-center gap-1 transition-all"
+                          title="Send Down: Push this card backward in stack"
+                        >
+                          <ChevronDown className="w-3 h-3" />
+                          <span>Send Down</span>
+                        </button>
+
                         {isActive && (
-                          <span className="px-2 py-0.5 rounded bg-white text-black font-bold text-[10px]">
-                            TOP OF PILE
+                          <span className="px-2 py-0.5 rounded bg-white text-black font-bold text-[10px] hidden sm:inline">
+                            TOP
                           </span>
                         )}
-                        <span className="text-[10px] text-neutral-400 font-mono">
-                          Drag to shuffle
-                        </span>
                       </div>
                     </div>
 
                     {/* Card Content Preview */}
-                    <div className="h-[240px] overflow-y-auto no-scrollbar font-mono text-xs text-neutral-300">
+                    <div className="h-[220px] overflow-y-auto no-scrollbar font-mono text-xs text-neutral-300">
                       <div className="text-sm font-bold text-white mb-1">{card.title}</div>
                       <div className="text-[11px] text-neutral-400 mb-3">{card.subtitle}</div>
 
@@ -1252,7 +1250,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
                     {/* Bottom Card Footer */}
                     <div className="absolute bottom-3 inset-x-5 flex items-center justify-between text-[11px] text-neutral-500 font-mono pt-2 border-t border-neutral-800/80">
-                      <span>Click to cycle to front • Drag handle to swap</span>
+                      <span>Click to cycle • Up/Down to shift elevation</span>
                       <button
                         onClick={e => {
                           e.stopPropagation();
@@ -1314,17 +1312,17 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
               ${
                 isLandscape
                   ? 'w-14 sm:w-16 h-full flex flex-col items-center justify-between py-2 border-r border-neutral-800'
-                  : 'w-full flex flex-row items-center gap-1.5 py-1 px-1 border-b border-neutral-800 overflow-x-auto no-scrollbar'
+                  : 'w-full flex flex-row items-center justify-center gap-2 py-1.5 px-2 border-b border-neutral-800 overflow-x-auto no-scrollbar mx-auto'
               }
             `}
           >
-            {/* Tabs List */}
+            {/* Tabs List Centered & Fit to Screen */}
             <div
               className={`
                 ${
                   isLandscape
                     ? 'flex flex-col items-center justify-center gap-2 w-full max-h-full overflow-y-auto no-scrollbar'
-                    : 'flex flex-row items-center gap-2 w-full overflow-x-auto no-scrollbar'
+                    : 'flex flex-row items-center justify-center gap-2 w-full overflow-x-auto no-scrollbar mx-auto'
                 }
               `}
             >
@@ -1333,6 +1331,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                   reorganizePlan && reorganizePlan.targetCard.id === sideCard.id;
                 const isDragging = draggedCardId === sideCard.id;
                 const isDragOver = dragOverCardId === sideCard.id;
+
+                const toolTheme = FULLER_WORKSPACE_TOOL_TAB_COLORS[sideCard.purpose.toLowerCase()];
 
                 return (
                   <div
@@ -1346,28 +1346,37 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                     onDragOver={e => handleDragOver(e, sideCard.id)}
                     onDrop={() => handleDrop(sideCard.id)}
                     onClick={() => handleSelectCard(sideCard.id)}
+                    style={
+                      toolTheme
+                        ? {
+                            backgroundColor: toolTheme.bg,
+                            borderColor: toolTheme.border,
+                            boxShadow: `0 0 12px ${toolTheme.glow}`
+                          }
+                        : undefined
+                    }
                     className={`
-                      w-10 h-10 sm:w-11 sm:h-11 aspect-square shrink-0 rounded
+                      w-10 h-10 sm:w-11 sm:h-11 aspect-square shrink-0 rounded border
                       cursor-grab active:cursor-grabbing overflow-hidden relative group flex items-center justify-center touch-manipulation transform-gpu transition-all ${
-                      isDistractionFree
-                        ? 'bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 hover:border-white shadow-sm'
-                        : 'bg-neutral-900 hover:bg-neutral-800 active:bg-neutral-700 border border-neutral-750 hover:border-white shadow'
-                    } ${
                       isTargetMoving ? 'opacity-0 pointer-events-none' : 'opacity-100'
                     } ${isDragging ? 'opacity-50 scale-95' : ''} ${isDragOver ? 'ring-2 ring-white' : ''}`}
                     title={`${sideCard.title} (${sideCard.purpose}) • Drag to reorder`}
                   >
                     {/* Left Accent Bar (landscape) or Bottom Accent Bar (horizontal) */}
                     <div
+                      style={{ backgroundColor: toolTheme ? toolTheme.border : '#ffffff' }}
                       className={`absolute transition-all ${
                         isLandscape
                           ? 'inset-y-0 left-0 w-1 h-full group-hover:w-1.5'
                           : 'inset-x-0 bottom-0 h-1 w-full group-hover:h-1.5'
-                      } bg-neutral-400 group-hover:bg-white`}
+                      }`}
                     />
 
                     {/* Purpose Icon */}
-                    <span className="font-mono text-[9px] uppercase font-bold text-neutral-300 group-hover:text-white">
+                    <span
+                      style={{ color: toolTheme ? toolTheme.text : '#ffffff' }}
+                      className="font-mono text-[9px] uppercase font-bold group-hover:text-white"
+                    >
                       {sideCard.purpose.slice(0, 3)}
                     </span>
                   </div>

@@ -20,6 +20,29 @@ import { PdfViewer } from './components/PdfViewer';
 import { CreateResourceModal } from './components/CreateResourceModal';
 import { FishingReelModal } from './components/FishingReelModal';
 import { ProfileView } from './components/ProfileView';
+import { VersionHistoryModal } from './components/VersionHistoryModal';
+import { CurricularPortalModal } from './components/learningPaths/CurricularPortalModal';
+import { FlashcardsModal } from './components/study/FlashcardsModal';
+import { StudyRoomsModal } from './components/study/StudyRoomsModal';
+import { NoteGraphModal } from './components/tools/NoteGraphModal';
+import { DailyReflectionModal } from './components/tools/DailyReflectionModal';
+import { PomodoroEyeBreakModal } from './components/tools/PomodoroEyeBreakModal';
+import { ThemePickerModal } from './components/ThemePickerModal';
+import { applyThemeToDocument, ATLAUZ_THEMES } from './themes';
+import { LearningPath, EarnedCertificate } from './types/learningPath';
+import { INITIAL_LEARNING_PATHS } from './data/initialLearningPaths';
+import {
+  Flashcard,
+  StudyRoom,
+  CompetencyVector,
+  DailyReflectionLog
+} from './types/study';
+import {
+  INITIAL_FLASHCARDS,
+  INITIAL_STUDY_ROOMS,
+  INITIAL_COMPETENCY_VECTOR,
+  INITIAL_DAILY_REFLECTIONS
+} from './data/initialStudyData';
 import {
   initialCompanion,
   initialTelemetry,
@@ -40,23 +63,85 @@ import {
   ResourceItem,
   CollaborativeBentoTile
 } from './types';
+import {
+  loadStoredData,
+  saveStoredData,
+  STORAGE_KEYS
+} from './utils/storage';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'hub' | 'library' | 'workspace' | 'companion' | 'profile'>('hub');
-  const [companion, setCompanion] = useState<CompanionState>(initialCompanion);
-  const [telemetry, setTelemetry] = useState<CognitiveTelemetry>(initialTelemetry);
+  const [companion, setCompanion] = useState<CompanionState>(() =>
+    loadStoredData(STORAGE_KEYS.COMPANION, initialCompanion)
+  );
+  const [telemetry, setTelemetry] = useState<CognitiveTelemetry>(() =>
+    loadStoredData(STORAGE_KEYS.TELEMETRY, initialTelemetry)
+  );
   const [schedule, setSchedule] = useState<ScheduleBlock[]>(initialSchedule);
   const [connectedApps, setConnectedApps] = useState<ConnectedApp[]>(initialConnectedApps);
-  const [settings, setSettings] = useState<UserAccountSettings>(initialSettings);
+  const [settings, setSettings] = useState<UserAccountSettings>(() =>
+    loadStoredData(STORAGE_KEYS.SETTINGS, initialSettings)
+  );
+  const [learningPaths, setLearningPaths] = useState<LearningPath[]>(() =>
+    loadStoredData(STORAGE_KEYS.LEARNING_PATHS, INITIAL_LEARNING_PATHS)
+  );
+  const [earnedCertificates, setEarnedCertificates] = useState<EarnedCertificate[]>(() =>
+    loadStoredData(STORAGE_KEYS.EARNED_CERTIFICATES, [])
+  );
+  const [isCurricularPortalOpen, setIsCurricularPortalOpen] = useState<boolean>(false);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [toastState, setToastState] = useState<ToastItem | string | null>(null);
   const [isDistractionFree, setIsDistractionFree] = useState<boolean>(false);
 
-  // Functional resource library states
-  const [resources, setResources] = useState<ResourceItem[]>(initialResources);
+  // Functional resource library states with Local Storage persistence
+  const [resources, setResources] = useState<ResourceItem[]>(() =>
+    loadStoredData(STORAGE_KEYS.RESOURCES, initialResources)
+  );
   const [activeResourceId, setActiveResourceId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [isFishingModalOpen, setIsFishingModalOpen] = useState<boolean>(false);
+  const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState<boolean>(false);
+  // Study Suite v1.1.4 States & LocalStorage Persistence
+  const [flashcards, setFlashcards] = useState<Flashcard[]>(() =>
+    loadStoredData(STORAGE_KEYS.FLASHCARDS, INITIAL_FLASHCARDS)
+  );
+  const [studyRooms, setStudyRooms] = useState<StudyRoom[]>(() =>
+    loadStoredData(STORAGE_KEYS.STUDY_ROOMS, INITIAL_STUDY_ROOMS)
+  );
+  const [competencies, setCompetencies] = useState<CompetencyVector>(() =>
+    loadStoredData(STORAGE_KEYS.COMPETENCIES, INITIAL_COMPETENCY_VECTOR)
+  );
+  const [todayReflection, setTodayReflection] = useState<DailyReflectionLog>(() =>
+    loadStoredData(STORAGE_KEYS.DAILY_REFLECTIONS, INITIAL_DAILY_REFLECTIONS[0])
+  );
+
+  const [isFlashcardsOpen, setIsFlashcardsOpen] = useState<boolean>(false);
+  const [isStudyRoomsOpen, setIsStudyRoomsOpen] = useState<boolean>(false);
+  const [isNoteGraphOpen, setIsNoteGraphOpen] = useState<boolean>(false);
+  const [isDailyReflectionOpen, setIsDailyReflectionOpen] = useState<boolean>(false);
+  const [isEyeBreakOpen, setIsEyeBreakOpen] = useState<boolean>(false);
+  const [isThemePickerOpen, setIsThemePickerOpen] = useState<boolean>(false);
+
+  const handleUpdateFlashcard = (cardId: string, updated: Partial<Flashcard>) => {
+    setFlashcards(prev => {
+      const next = prev.map(c => (c.id === cardId ? { ...c, ...updated } : c));
+      saveStoredData(STORAGE_KEYS.FLASHCARDS, next);
+      return next;
+    });
+  };
+
+  const handleCreateFlashcard = (card: Flashcard) => {
+    setFlashcards(prev => {
+      const next = [card, ...prev];
+      saveStoredData(STORAGE_KEYS.FLASHCARDS, next);
+      return next;
+    });
+  };
+
+  const handleSaveReflection = (reflection: DailyReflectionLog) => {
+    setTodayReflection(reflection);
+    saveStoredData(STORAGE_KEYS.DAILY_REFLECTIONS, reflection);
+  };
 
   // Collaborative Bento Workspaces state (CRDT & Co-Presence)
   const [collabTiles, setCollabTiles] = useState<CollaborativeBentoTile[]>(initialCollaborativeBentoTiles);
@@ -258,6 +343,112 @@ export default function App() {
     }
   };
 
+  const handleDeleteResource = (id: string) => {
+    const target = resources.find(r => r.id === id);
+    if (!target) return;
+    const previous = [...resources];
+    setResources(prev => prev.filter(r => r.id !== id));
+    if (activeResourceId === id) {
+      setActiveResourceId(null);
+    }
+    showToast({
+      message: `Deleted "${target.title}"`,
+      type: 'info',
+      onUndo: () => setResources(previous),
+      undoLabel: 'Undo'
+    });
+  };
+
+  // Automatic Local Storage Persistence Synchronization
+  useEffect(() => {
+    saveStoredData(STORAGE_KEYS.RESOURCES, resources);
+  }, [resources]);
+
+  useEffect(() => {
+    saveStoredData(STORAGE_KEYS.SETTINGS, settings);
+  }, [settings]);
+
+  useEffect(() => {
+    saveStoredData(STORAGE_KEYS.TELEMETRY, telemetry);
+  }, [telemetry]);
+
+  useEffect(() => {
+    saveStoredData(STORAGE_KEYS.COMPANION, companion);
+  }, [companion]);
+
+  useEffect(() => {
+    saveStoredData(STORAGE_KEYS.LEARNING_PATHS, learningPaths);
+  }, [learningPaths]);
+
+  useEffect(() => {
+    saveStoredData(STORAGE_KEYS.EARNED_CERTIFICATES, earnedCertificates);
+  }, [earnedCertificates]);
+
+  // Curricular Learning Paths Handlers
+  const handleEnrollPath = (pathId: string) => {
+    setLearningPaths(prev =>
+      prev.map(p =>
+        p.id === pathId
+          ? { ...p, isEnrolled: true, enrolledAt: p.enrolledAt || new Date().toISOString().slice(0, 10) }
+          : p
+      )
+    );
+  };
+
+  const handleCompleteModule = (pathId: string, moduleId: string) => {
+    setLearningPaths(prev =>
+      prev.map(p => {
+        if (p.id !== pathId) return p;
+        const updatedMods = p.modules.map(m =>
+          m.id === moduleId ? { ...m, isCompleted: true, completedAt: new Date().toISOString().slice(0, 10) } : m
+        );
+        const allDone = updatedMods.every(m => m.isCompleted);
+        return {
+          ...p,
+          modules: updatedMods,
+          completedAt: allDone ? (p.completedAt || new Date().toISOString().slice(0, 10)) : p.completedAt
+        };
+      })
+    );
+  };
+
+  const handleClaimCertificate = (path: LearningPath) => {
+    const existing = earnedCertificates.find(c => c.pathId === path.id);
+    if (existing) return;
+
+    const newCert: EarnedCertificate = {
+      id: `cert-${Date.now()}`,
+      pathId: path.id,
+      pathTitle: path.title,
+      studentName: settings.username,
+      verificationHash: `ATL-2026-CERT-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+      issuedAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+      badgeTitle: path.reward.badgeTitle,
+      badgeIcon: path.reward.badgeIcon,
+      honorLevel: path.reward.honorLevel,
+      instructor: 'Dr. Eric Alvarez & Curriculum Board',
+      unlockedFishName: path.reward.unlockedFish.name
+    };
+
+    setEarnedCertificates(prev => [newCert, ...prev]);
+
+    // Add rare fish to companion aquarium if not present
+    setCompanion(prev => {
+      const alreadyHas = prev.fishes.some(f => f.name === path.reward.unlockedFish.name);
+      if (alreadyHas) return prev;
+      return {
+        ...prev,
+        fishes: [...prev.fishes, path.reward.unlockedFish]
+      };
+    });
+
+    showToast(`🎓 Graduated! Unlocked "${path.reward.badgeTitle}" & rare fish "${path.reward.unlockedFish.name}"!`);
+  };
+
+  const handleCreateCustomPath = (newPath: LearningPath) => {
+    setLearningPaths(prev => [newPath, ...prev]);
+  };
+
   // Touch handlers on container
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartXRef.current = e.touches[0].clientX;
@@ -275,14 +466,25 @@ export default function App() {
     }
   };
 
-  // Sync theme class on mount
+  // Sync theme class and conceptual CSS tokens on mount & update
   useEffect(() => {
-    if (settings.theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
+    applyThemeToDocument(settings.theme || 'dark', settings.themeIntensity || 'focus');
+    if (settings.theme === 'light') {
       document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
     }
-  }, [settings.theme]);
+  }, [settings.theme, settings.themeIntensity]);
+
+  const handleToggleThemeIntensity = () => {
+    const nextIntensity = settings.themeIntensity === 'fuller' ? 'focus' : 'fuller';
+    handleUpdateSettings({ themeIntensity: nextIntensity });
+    showToast(
+      nextIntensity === 'fuller'
+        ? '🎨 Fuller Theme Mode Active: Rich Solid Colors & View Codings'
+        : '🌙 Focus Mode Active: Deep Obsidian Dark Slate Surfaces'
+    );
+  };
 
   const activeProject = defaultProjects[0];
   const activeResource = resources.find(r => r.id === activeResourceId) || null;
@@ -291,25 +493,37 @@ export default function App() {
     <div
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      style={{
+        backgroundColor: 'var(--theme-bg-primary, #070707)',
+        color: 'var(--theme-text-primary, #ffffff)'
+      }}
       className={`w-full relative selection:bg-white selection:text-black transition-colors duration-300 ${
         isDistractionFree
           ? 'h-[100dvh] max-h-[100dvh] overflow-hidden'
           : 'min-h-screen'
-      } ${
-        settings.theme === 'dark'
-          ? isDistractionFree
-            ? 'bg-[#090909] text-[#e5e5e5]'
-            : 'bg-[#0a0a0a] text-[#e5e5e5]'
-          : 'bg-[#f5f5f5] text-[#171717]'
       }`}
     >
-      {/* Prototype Wireframe Architectural Grid (z-0) */}
+      {/* Prototype Wireframe Architectural Grid & Immersive Theme Backdrop Pattern (z-0) */}
       <div
         className={`fixed inset-0 pointer-events-none z-0 overflow-hidden transition-opacity duration-500 ${
-          isDistractionFree ? 'opacity-15' : 'opacity-40'
+          isDistractionFree ? 'opacity-20' : 'opacity-60'
         }`}
       >
-        <div className="absolute inset-0 bg-prototype-grid" />
+        {/* Architectural Grid */}
+        <div
+          className="absolute inset-0 bg-prototype-grid"
+          style={{ filter: 'drop-shadow(0 0 8px var(--theme-accent))', opacity: 0.35 }}
+        />
+        {/* Unique Theme Backdrop Pattern */}
+        <div
+          className="absolute inset-0"
+          style={{ background: 'var(--theme-backdrop-pattern, none)' }}
+        />
+        {/* Theme Soft Ambient Radial Light Gradient */}
+        <div
+          className="absolute inset-0"
+          style={{ background: 'var(--theme-texture, none)' }}
+        />
       </div>
 
       {/* Global App Header (z-50) */}
@@ -318,6 +532,8 @@ export default function App() {
         onOpenSidebar={() => setSidebarOpen(true)}
         settings={settings}
         onToggleTheme={handleToggleTheme}
+        onToggleThemeIntensity={handleToggleThemeIntensity}
+        onOpenThemePicker={() => setIsThemePickerOpen(true)}
         onLockScreen={() => handleUpdateSettings({ isLocked: true })}
         isDistractionFree={isDistractionFree}
         onToggleDistractionFree={handleToggleDistractionFree}
@@ -327,8 +543,10 @@ export default function App() {
       <main
         className={`relative z-10 w-full transition-all duration-300 ${
           isDistractionFree
-            ? 'h-[100dvh] max-h-[100dvh] overflow-hidden p-2 sm:p-3 flex flex-col'
-            : 'min-h-screen pt-24 pb-24 px-3 sm:px-4'
+            ? 'h-[100dvh] max-h-[100dvh] overflow-hidden p-1.5 sm:p-3 flex flex-col'
+            : activeTab === 'hub'
+            ? 'h-[100dvh] max-h-[100dvh] overflow-hidden pt-16 pb-16 px-1.5 sm:px-4 sm:h-auto sm:max-h-none sm:overflow-visible sm:pt-24 sm:pb-24 flex flex-col justify-between'
+            : 'min-h-screen pt-20 pb-24 px-3 sm:px-4'
         }`}
       >
         {activeTab === 'hub' && (
@@ -345,6 +563,12 @@ export default function App() {
             onOpenProfile={() => setActiveTab('profile')}
             onShowToast={showToast}
             userRole={settings.role}
+            onOpenFlashcards={() => setIsFlashcardsOpen(true)}
+            onOpenStudyRooms={() => setIsStudyRoomsOpen(true)}
+            onOpenNoteGraph={() => setIsNoteGraphOpen(true)}
+            onOpenDailyReflection={() => setIsDailyReflectionOpen(true)}
+            onOpenEyeBreak={() => setIsEyeBreakOpen(true)}
+            flashcardCount={flashcards.length}
           />
         )}
 
@@ -358,8 +582,12 @@ export default function App() {
             onUpdateBadge={handleUpdateBadge}
             onUpdateCoverColor={handleUpdateCoverColor}
             onUpdateResource={handleUpdateResource}
+            onDeleteResource={handleDeleteResource}
             onShowToast={showToast}
             userRole={settings.role}
+            onOpenCurricularPortal={() => setIsCurricularPortalOpen(true)}
+            enrolledPathsCount={learningPaths.filter(p => p.isEnrolled).length}
+            earnedCertificatesCount={earnedCertificates.length}
           />
         )}
 
@@ -398,6 +626,8 @@ export default function App() {
             onShowToast={showToast}
             onLockSession={() => handleUpdateSettings({ isLocked: true })}
             onSwitchTab={tab => setActiveTab(tab)}
+            onOpenVersionHistory={() => setIsVersionHistoryOpen(true)}
+            competencies={competencies}
           />
         )}
       </main>
@@ -422,9 +652,39 @@ export default function App() {
           onNavigateTab={tab => setActiveTab(tab)}
           onLockScreen={() => handleUpdateSettings({ isLocked: true })}
           onOpenFishing={() => setIsFishingModalOpen(true)}
+          onOpenVersionHistory={() => setIsVersionHistoryOpen(true)}
           onShowToast={showToast}
+          earnedCertificates={earnedCertificates}
+          onOpenCurricularPortal={() => setIsCurricularPortalOpen(true)}
+          onOpenFlashcards={() => setIsFlashcardsOpen(true)}
+          onOpenStudyRooms={() => setIsStudyRoomsOpen(true)}
+          onOpenNoteGraph={() => setIsNoteGraphOpen(true)}
+          onOpenDailyReflection={() => setIsDailyReflectionOpen(true)}
+          onOpenEyeBreak={() => setIsEyeBreakOpen(true)}
         />
       )}
+
+      {/* Curricular Learning Paths & Degree Accreditations Full-Screen Portal */}
+      <CurricularPortalModal
+        isOpen={isCurricularPortalOpen}
+        onClose={() => setIsCurricularPortalOpen(false)}
+        paths={learningPaths}
+        earnedCertificates={earnedCertificates}
+        resources={resources}
+        settings={settings}
+        onEnrollPath={handleEnrollPath}
+        onCompleteModule={handleCompleteModule}
+        onClaimCertificate={handleClaimCertificate}
+        onCreateCustomPath={handleCreateCustomPath}
+        onOpenResource={handleOpenResource}
+        onShowToast={showToast}
+      />
+
+      {/* Version History Full-Screen Focus Modal (v1.1.1 Patch Log) */}
+      <VersionHistoryModal
+        isOpen={isVersionHistoryOpen}
+        onClose={() => setIsVersionHistoryOpen(false)}
+      />
 
       {/* Biometric Passkey Lock Screen Overlay (z-50) */}
       {settings.isLocked && (
@@ -452,6 +712,66 @@ export default function App() {
         onCatchNewFish={handleCatchNewFish}
         onAddBonusStreaks={handleAddBonusStreaks}
         onShowToast={showToast}
+      />
+
+      {/* Spaced Repetition Flashcards Modal */}
+      <FlashcardsModal
+        isOpen={isFlashcardsOpen}
+        onClose={() => setIsFlashcardsOpen(false)}
+        flashcards={flashcards}
+        onUpdateFlashcard={handleUpdateFlashcard}
+        onCreateFlashcard={handleCreateFlashcard}
+        onShowToast={showToast}
+      />
+
+      {/* Collaborative Live Study Lounge Rooms Modal */}
+      <StudyRoomsModal
+        isOpen={isStudyRoomsOpen}
+        onClose={() => setIsStudyRoomsOpen(false)}
+        rooms={studyRooms}
+        settings={settings}
+        onShowToast={showToast}
+      />
+
+      {/* Interactive Bidirectional Note Knowledge Graph Modal */}
+      <NoteGraphModal
+        isOpen={isNoteGraphOpen}
+        onClose={() => setIsNoteGraphOpen(false)}
+        resources={resources}
+        onOpenResource={handleOpenResource}
+        onShowToast={showToast}
+      />
+
+      {/* Daily Academic Reflection & Mood Journal Modal */}
+      <DailyReflectionModal
+        isOpen={isDailyReflectionOpen}
+        onClose={() => setIsDailyReflectionOpen(false)}
+        todayReflection={todayReflection}
+        onSaveReflection={handleSaveReflection}
+        onShowToast={showToast}
+      />
+
+      {/* Pomodoro 20-20-20 Eye Strain & Ergonomic Break Modal */}
+      <PomodoroEyeBreakModal
+        isOpen={isEyeBreakOpen}
+        onClose={() => setIsEyeBreakOpen(false)}
+        onShowToast={showToast}
+      />
+
+      {/* Living Themes & Conceptual Atmospheres Gallery Modal (v1.3.0) */}
+      <ThemePickerModal
+        isOpen={isThemePickerOpen}
+        onClose={() => setIsThemePickerOpen(false)}
+        currentTheme={settings.theme}
+        intensityMode={settings.themeIntensity || 'focus'}
+        onToggleIntensityMode={handleToggleThemeIntensity}
+        onSelectTheme={themeId => {
+          handleUpdateSettings({ theme: themeId });
+          showToast({
+            message: `Applied theme: ${ATLAUZ_THEMES[themeId]?.name || themeId}`,
+            type: 'success'
+          });
+        }}
       />
 
       {/* Full Feature Editors & Viewers (Maximizing on Click, Shrinking on Close) */}

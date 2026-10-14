@@ -67,19 +67,19 @@ export const FrostedPanel: React.FC<FrostedPanelProps> = ({
       >
         <div className="flex items-center gap-2.5 min-w-0">
           {icon && (
-            <div className={`shrink-0 transition-colors ${isFrosted ? 'text-neutral-500' : 'text-white'}`}>
+            <div
+              style={{ color: isFrosted ? 'var(--theme-text-muted, #888)' : 'var(--theme-accent, #fff)' }}
+              className="shrink-0 transition-colors"
+            >
               {icon}
             </div>
           )}
 
           <div className="flex items-center gap-2 truncate">
             <h3
-              className={`font-bold truncate text-sm sm:text-base tracking-tight font-mono transition-colors ${
-                isStreakFrozen
-                  ? 'text-neutral-500 line-through'
-                  : isFrosted
-                  ? 'text-neutral-400 hover:text-white'
-                  : 'text-white'
+              style={{ color: isFrosted ? 'var(--theme-text-muted, #aaa)' : 'var(--theme-text-primary, #fff)' }}
+              className={`font-extrabold truncate text-sm sm:text-base tracking-tight font-mono transition-colors ${
+                isStreakFrozen ? 'line-through opacity-60' : ''
               }`}
             >
               {title}
@@ -87,11 +87,12 @@ export const FrostedPanel: React.FC<FrostedPanelProps> = ({
 
             {badge && (
               <span
-                className={`text-[10px] font-mono font-medium px-1.5 py-0.5 rounded border truncate ${
-                  isFrosted
-                    ? 'bg-neutral-900 border-neutral-800 text-neutral-400'
-                    : 'bg-neutral-800 border-neutral-600 text-neutral-200'
-                }`}
+                style={{
+                  backgroundColor: isFrosted ? 'rgba(0,0,0,0.3)' : 'var(--theme-badge-bg, #262626)',
+                  color: isFrosted ? 'var(--theme-text-muted, #aaa)' : 'var(--theme-badge-text, #ffffff)',
+                  borderColor: 'var(--theme-card-border, #404040)'
+                }}
+                className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border truncate shadow-xs"
               >
                 {badge}
               </span>
@@ -114,24 +115,25 @@ export const FrostedPanel: React.FC<FrostedPanelProps> = ({
               e.stopPropagation();
               onToggleFrost();
             }}
-            className={`px-2.5 py-1 rounded text-[11px] font-mono font-bold flex items-center gap-1.5 transition-all ${
-              isFrosted
-                ? 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800 hover:border-neutral-700'
-                : 'bg-white text-black hover:bg-neutral-200 border border-white'
-            }`}
+            style={{
+              backgroundColor: isFrosted ? 'rgba(0, 0, 0, 0.3)' : 'var(--theme-action-btn-bg, #ffffff)',
+              color: isFrosted ? 'var(--theme-text-primary, #ffffff)' : 'var(--theme-action-btn-text, #000000)',
+              borderColor: 'var(--theme-card-border, #404040)'
+            }}
+            className="px-2.5 py-1 rounded text-[11px] font-mono font-extrabold flex items-center gap-1.5 transition-all border shadow-xs hover:scale-105 active:scale-95"
             title={isFrosted ? 'Click, double-tap, or long-press to defrost' : 'Click to frost into compact title'}
           >
             {isFrosted ? (
               <>
-                <EyeOff className="w-3 h-3 text-neutral-400" />
+                <EyeOff className="w-3 h-3" />
                 <span className="hidden sm:inline">FROSTED</span>
-                <ChevronRight className="w-3 h-3 text-neutral-500" />
+                <ChevronRight className="w-3 h-3" />
               </>
             ) : (
               <>
-                <Eye className="w-3 h-3 text-black" />
+                <Eye className="w-3 h-3" />
                 <span className="hidden sm:inline">DEFROSTED</span>
-                <ChevronDown className="w-3 h-3 text-black" />
+                <ChevronDown className="w-3 h-3" />
               </>
             )}
           </button>

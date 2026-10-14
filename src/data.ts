@@ -199,6 +199,62 @@ export const initialSettings: UserAccountSettings = {
   idleTimerMinutes: 15,
   isLocked: false,
   theme: 'dark',
+  themeIntensity: 'focus',
+  // v1.1.5 Academic Role & Active Ecosystem defaults
+  hubLayout: {
+    preset: 'balanced',
+    showDateTime: true,
+    showCompanionBubble: true,
+    showPinnedContent: true,
+    pinnedSlotCount: 4,
+    customPinnedIds: ['res-doc-1', 'res-slide-1', 'res-streak-widget', 'res-nb-1'],
+    showDueActivities: true,
+    dueActivitiesLimit: 3,
+    showTodoTasks: true,
+    showFocusModeShortcuts: true,
+    showCognitiveMetrics: false,
+    showStudyLoungeTicker: false,
+    showFlashcardQueue: false,
+    showWeatherEffect: true
+  },
+  libraryShelvingMode: 'hybrid',
+  appPermissions: {
+    'Google Drive': {
+      readAccess: true,
+      writeAccess: true,
+      backgroundSync: true,
+      telemetryIsolation: true,
+      lastSyncedAt: 'Today, 08:30 AM'
+    },
+    'Google Calendar': {
+      readAccess: true,
+      writeAccess: false,
+      backgroundSync: true,
+      telemetryIsolation: true,
+      lastSyncedAt: 'Today, 08:15 AM'
+    },
+    'Notion': {
+      readAccess: true,
+      writeAccess: true,
+      backgroundSync: false,
+      telemetryIsolation: true,
+      lastSyncedAt: 'Yesterday, 19:40 PM'
+    },
+    'Zotero & arXiv': {
+      readAccess: true,
+      writeAccess: false,
+      backgroundSync: true,
+      telemetryIsolation: true,
+      lastSyncedAt: 'Oct 05, 14:22 PM'
+    },
+    'Canvas LMS': {
+      readAccess: true,
+      writeAccess: false,
+      backgroundSync: true,
+      telemetryIsolation: true,
+      lastSyncedAt: 'Today, 07:00 AM'
+    }
+  },
   securityLogs: [
     { id: 'sec-1', event: 'WebAuthn Hardware Passkey Verified', timestamp: 'Today, 08:31 AM', device: 'Chrome 124 / macOS • 192.168.1.42', status: 'verified' },
     { id: 'sec-2', event: 'Biometric Face ID Handshake Signed', timestamp: 'Yesterday, 14:15 PM', device: 'Mobile Safari • iOS 18', status: 'verified' },
@@ -287,6 +343,7 @@ export const initialResources: ResourceItem[] = [
     badge: '● Priority',
     createdAt: '2026-09-12',
     updatedAt: 'Just now',
+    roleShelf: 'researcher',
     metadata: {
       collaborators: ['EK', 'DL', 'You'],
       docContent: `<h1>§ 3.4 Bathypelagic Audio-Haptic Feedback Architecture</h1>
@@ -358,6 +415,7 @@ export const initialResources: ResourceItem[] = [
     badge: '◆ Milestone',
     createdAt: '2026-09-10',
     updatedAt: '2h ago',
+    roleShelf: 'educator',
     metadata: {
       slideCount: 4,
       currentSlide: 1,
@@ -410,6 +468,7 @@ export const initialResources: ResourceItem[] = [
     badge: '★ Favorite',
     createdAt: '2026-09-08',
     updatedAt: '35m ago',
+    roleShelf: 'academic',
     metadata: {
       activePageIndex: 0,
       pages: [
@@ -450,6 +509,7 @@ export const initialResources: ResourceItem[] = [
     badge: '▲ Insight',
     createdAt: '2026-09-01',
     updatedAt: '1d ago',
+    roleShelf: 'personal',
     metadata: {
       author: 'Prof. Don Norman & Alistair Vance',
       progressPercent: 44,
@@ -491,6 +551,7 @@ export const initialResources: ResourceItem[] = [
     badge: '✓ Mastered',
     createdAt: '2026-09-05',
     updatedAt: '4h ago',
+    roleShelf: 'academic',
     metadata: {
       instructor: 'Dr. Sarah Lin, DeepMind Visiting Faculty',
       courseCode: 'COGS-492',
@@ -541,6 +602,7 @@ export const initialResources: ResourceItem[] = [
     badge: '■ Balanced',
     createdAt: '2026-09-14',
     updatedAt: '10m ago',
+    roleShelf: 'personal',
     metadata: {
       noteContent: `# Rapid Research Notes & Thesis Sparks
 
@@ -569,6 +631,7 @@ navigator.vibrate?.([tactileFrequency, 20, tactileFrequency * 0.8]);
     badge: '■ Balanced',
     createdAt: '2026-09-17',
     updatedAt: 'Today, 08:30 AM',
+    roleShelf: 'personal',
     metadata: {
       journalDate: 'September 17, 2026',
       mood: 'Deep Flow',
@@ -594,6 +657,7 @@ navigator.vibrate?.([tactileFrequency, 20, tactileFrequency * 0.8]);
     badge: '◉ Research',
     createdAt: '2026-09-02',
     updatedAt: '3d ago',
+    roleShelf: 'researcher',
     metadata: {
       fileName: 'Mariana_Acoustic_Spec_v4.2.pdf',
       fileSize: '4.8 MB',

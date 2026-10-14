@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { FishCompanion, CognitiveTelemetry, CompanionState } from '../types';
 import { AtlauzFish } from './AtlauzFish';
+import { AquariumWeatherOverlay, AquariumWeather } from './companion/AquariumWeatherOverlay';
 
 interface FishTankProps {
   fishes: FishCompanion[];
@@ -72,6 +73,9 @@ export const FishTank: React.FC<FishTankProps> = ({
   const [foodPellets, setFoodPellets] = useState<FoodPellet[]>([]);
   const [ripples, setRipples] = useState<RippleEffect[]>([]);
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([]);
+  const [weather, setWeather] = useState<AquariumWeather>('sunlight');
+  const [isPlaytimeActive, setIsPlaytimeActive] = useState<boolean>(false);
+  const [pointerTarget, setPointerTarget] = useState<{ x: number; y: number } | null>(null);
 
   // Initialize physics for fishes
   useEffect(() => {
@@ -116,12 +120,16 @@ export const FishTank: React.FC<FishTankProps> = ({
             const nearestPellet = foodPellets[0];
             targetX = nearestPellet.x;
             targetY = nearestPellet.y;
+          } else if (isPlaytimeActive && pointerTarget) {
+            targetX = pointerTarget.x;
+            targetY = pointerTarget.y;
           }
 
           if (targetX !== null) {
             const dx = targetX - state.x;
             newDirection = dx > 0 ? 1 : -1;
-            newVx = newDirection * (0.55 * (fish.size || 1));
+            const speed = isPlaytimeActive && foodPellets.length === 0 ? 0.75 : 0.55;
+            newVx = newDirection * (speed * (fish.size || 1));
             newX += newVx;
           } else {
             newX += newVx;
@@ -201,7 +209,20 @@ export const FishTank: React.FC<FishTankProps> = ({
     return () => clearInterval(interval);
   }, [fishes, foodPellets]);
 
-  // Click on tank to drop food & ripples
+  // Mouse move handler for playtime following
+  const handleTankMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current || !isPlaytimeActive) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = Math.max(10, Math.min(90, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(20, Math.min(80, ((e.clientY - rect.top) / rect.height) * 100));
+    setPointerTarget({ x, y });
+  };
+
+  const handleTankMouseLeave = () => {
+    setPointerTarget(null);
+  };
+
+  // Click on tank to drop food & ripples & playtime tricks
   const handleTankClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -218,6 +239,15 @@ export const FishTank: React.FC<FishTankProps> = ({
     // Drop food pellet
     const pelletId = `food-${Date.now()}`;
     setFoodPellets(prev => [...prev.slice(-3), { id: pelletId, x: clickX, y: clickY, opacity: 1 }]);
+
+    if (isPlaytimeActive) {
+      const heartId = `play-${Date.now()}`;
+      setFloatingHearts(prev => [...prev.slice(-4), { id: heartId, x: clickX, y: clickY }]);
+      setTimeout(() => {
+        setFloatingHearts(prev => prev.filter(h => h.id !== heartId));
+      }, 1500);
+      onShowToast('✨ Companion responded to playtime interaction! Vitality +1');
+    }
   };
 
   const handleStartRename = (fish: FishCompanion) => {
@@ -311,15 +341,91 @@ export const FishTank: React.FC<FishTankProps> = ({
         <div
           ref={containerRef}
           onClick={handleTankClick}
+          onMouseMove={handleTankMouseMove}
+          onMouseLeave={handleTankMouseLeave}
           className="relative w-full h-72 sm:h-80 select-none cursor-pointer overflow-hidden bg-neutral-950"
-          title="Click inside the tank to drop food and watch fishes gather"
+          title={isPlaytimeActive ? 'Playtime Active: Move cursor to guide fishes, click to do tricks!' : 'Click inside the tank to drop food and watch fishes gather'}
         >
           {/* Wireframe Depth Coordinate Grid */}
           <div className="absolute inset-0 pointer-events-none opacity-20 bg-prototype-grid" />
-          
-          <div className="absolute top-2 left-3 font-mono text-[9px] text-neutral-500 pointer-events-none">
-            [AQUATIC TANK STAGE: PROTOTYPE-01]
+
+          {/* AMBIENT CLIMATE WEATHER SHADERS */}
+          {weather === 'sunlight' && (
+            <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 via-amber-400/5 to-transparent mix-blend-screen" />
+              {/* Sunlight Shaft Rays */}
+              <div
+                className="absolute -top-10 left-10 w-32 h-96 bg-gradient-to-b from-amber-200/20 via-amber-300/5 to-transparent rotate-12 blur-sm pointer-events-none"
+                style={{ transformOrigin: 'top left' }}
+              />
+              <div
+                className="absolute -top-10 left-1/2 w-44 h-96 bg-gradient-to-b from-amber-100/15 via-amber-200/5 to-transparent -rotate-6 blur-md pointer-events-none"
+                style={{ transformOrigin: 'top center' }}
+              />
+            </div>
+          )}
+
+          {weather === 'rain' && (
+            <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 via-cyan-950/15 to-transparent" />
+              {/* Rain Streaks */}
+              <div className="absolute inset-0 opacity-25">
+                {[...Array(12)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-[1px] h-12 bg-cyan-200/60 rotate-[18deg] animate-pulse"
+                    style={{
+                      left: `${(i * 8.5) % 96}%`,
+                      top: `${(i * 11) % 75}%`,
+                      animationDuration: `${0.8 + (i % 3) * 0.4}s`
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {weather === 'lunar' && (
+            <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-indigo-950/35 via-purple-950/20 to-black/50" />
+              {/* Lunar Stars */}
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 h-1 rounded-full bg-indigo-200/70 animate-ping"
+                  style={{
+                    left: `${15 + (i * 11)}%`,
+                    top: `${10 + (i * 7)}%`,
+                    animationDuration: `${2.5 + (i % 4) * 0.5}s`
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Tank HUD & Weather Controls */}
+          <div className="absolute top-2 left-3 font-mono text-[9px] text-neutral-500 pointer-events-none z-20 flex items-center gap-2">
+            <span>[AQUATIC TANK STAGE: PROTOTYPE-01]</span>
+            {isPlaytimeActive && (
+              <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 animate-pulse">
+                PLAYTIME TRICKS ACTIVE
+              </span>
+            )}
           </div>
+
+          <AquariumWeatherOverlay
+            weather={weather}
+            onChangeWeather={newW => {
+              setWeather(newW);
+              onShowToast(`Aquarium weather set to: ${newW.toUpperCase()}`);
+            }}
+            isPlaytimeActive={isPlaytimeActive}
+            onTogglePlaytime={() => {
+              const next = !isPlaytimeActive;
+              setIsPlaytimeActive(next);
+              onShowToast(next ? '🎮 Companion playtime active! Move cursor to guide fish' : 'Playtime mode concluded');
+            }}
+          />
 
           {/* Air Bubbler Column */}
           <div className="absolute bottom-6 left-8 w-6 h-full pointer-events-none flex flex-col justify-end items-center opacity-40">

@@ -1,5 +1,7 @@
 export type LearningStyle = 'Visual & Spatial' | 'Auditory & Acoustic' | 'Kinesthetic & Interactive' | 'Reading & Synthesis';
 
+export type ThemeIntensityMode = 'focus' | 'fuller';
+
 export type ResourceType =
   | 'notebook'
   | 'ebook'
@@ -19,6 +21,8 @@ export interface ResourceBadge {
   borderColor: string;
 }
 
+export type RoleShelfType = 'personal' | 'academic' | 'researcher' | 'educator';
+
 export interface ResourceItem {
   id: string;
   type: ResourceType;
@@ -32,6 +36,7 @@ export interface ResourceItem {
   badge: string;
   createdAt: string;
   updatedAt: string;
+  roleShelf?: RoleShelfType;
   metadata: {
     // Notebook
     pages?: Array<{ id: string; title: string; content: string; badge?: string; isBookmarked?: boolean }>;
@@ -213,6 +218,61 @@ export interface SecurityAuditEntry {
   status: 'verified' | 'alert';
 }
 
+export type LibraryShelvingMode = 'categories' | 'role_owned' | 'hybrid';
+
+export type HubWidgetPreset = 'minimal' | 'balanced' | 'maximal' | 'custom';
+
+export interface AppPermissionDetail {
+  readAccess: boolean;
+  writeAccess: boolean;
+  backgroundSync: boolean;
+  telemetryIsolation: boolean;
+  lastSyncedAt?: string;
+  tokenExpiresAt?: string;
+}
+
+export interface HubLayoutSettings {
+  preset: HubWidgetPreset;
+  showDateTime: boolean;
+  showCompanionBubble: boolean;
+  showPinnedContent: boolean;
+  pinnedSlotCount: 2 | 4;
+  customPinnedIds?: string[]; // Up to 4 chosen pinned resource or shortcut IDs
+  showDueActivities: boolean;
+  dueActivitiesLimit: number;
+  showTodoTasks: boolean;
+  showFocusModeShortcuts: boolean;
+  showCognitiveMetrics: boolean;
+  showStudyLoungeTicker: boolean;
+  showFlashcardQueue: boolean;
+  showWeatherEffect: boolean;
+}
+
+export interface HubTaskItem {
+  id: string;
+  title: string;
+  completed: boolean;
+  docTitle?: string;
+  docType?: ResourceType;
+  resourceId?: string;
+  dueDate?: string;
+  priority?: 'urgent' | 'medium' | 'normal';
+}
+
+export interface DueActivityItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  dueDate: string;
+  urgency: 'critical' | 'high' | 'normal';
+  type: 'course_expiration' | 'assignment_due' | 'exam_scheduled' | 'research_review';
+  pathId?: string;
+  resourceId?: string;
+  targetUnit?: string;
+}
+
+import type { AppThemeId } from './themes';
+
 export interface UserAccountSettings {
   username: string;
   email: string;
@@ -228,8 +288,13 @@ export interface UserAccountSettings {
   biometricsEnabled: boolean;
   idleTimerMinutes: number; // 15
   isLocked: boolean;
-  theme: 'dark' | 'light';
+  theme: AppThemeId;
+  themeIntensity?: ThemeIntensityMode;
   securityLogs: SecurityAuditEntry[];
+  // v1.1.5 Academic Role & Active Ecosystem fields
+  hubLayout?: HubLayoutSettings;
+  libraryShelvingMode?: LibraryShelvingMode;
+  appPermissions?: Record<string, AppPermissionDetail>;
 }
 
 export interface LibraryTaskItem {

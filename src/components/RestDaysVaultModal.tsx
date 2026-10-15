@@ -24,6 +24,7 @@ interface RestDaysVaultModalProps {
   onToggleStreakFreeze: () => void;
   onAddRestDay: (entry: RestDayVaultEntry) => void;
   onShowToast: (msg: string) => void;
+  settings?: { theme?: 'light' | 'dark' };
 }
 
 export const RestDaysVaultModal: React.FC<RestDaysVaultModalProps> = ({
@@ -33,8 +34,10 @@ export const RestDaysVaultModal: React.FC<RestDaysVaultModalProps> = ({
   restDays,
   onToggleStreakFreeze,
   onAddRestDay,
-  onShowToast
+  onShowToast,
+  settings
 }) => {
+  const isDark = settings?.theme === 'dark';
   const [newLabel, setNewLabel] = useState('');
   const [newSleepHours, setNewSleepHours] = useState('8.0');
   const [newWellnessHours, setNewWellnessHours] = useState('2.5');
@@ -65,8 +68,8 @@ export const RestDaysVaultModal: React.FC<RestDaysVaultModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 font-sans select-none animate-fade-in">
-      <div className="w-full max-w-2xl bg-neutral-900 border border-neutral-700 rounded-lg p-5 text-white shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 font-sans select-none animate-fade-in ${isDark ? 'bg-black/80' : 'bg-white/60'}`}>
+      <div className={`w-full max-w-2xl rounded-lg p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar ${isDark ? 'bg-neutral-900 border border-neutral-700 text-white' : 'bg-neutral-50 border border-neutral-300 text-black'}`}>
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
           <div className="flex items-center gap-2.5">
@@ -156,6 +159,7 @@ export const RestDaysVaultModal: React.FC<RestDaysVaultModalProps> = ({
                   ? 'bg-neutral-800 text-white hover:bg-neutral-700 border border-neutral-600'
                   : 'bg-white text-black hover:bg-neutral-200'
               }`}
+              title={telemetry.isStreakFrozen ? 'Your habit streak is paused. Your count is protected during rest.' : 'Temporarily freeze your streak to prevent it from breaking during scheduled rest or recovery periods.'}
             >
               <Snowflake className="w-3.5 h-3.5" />
               <span>{telemetry.isStreakFrozen ? 'Resume Active Flow' : 'Freeze Streak Today'}</span>

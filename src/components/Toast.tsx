@@ -14,7 +14,7 @@ interface ToastProps {
   onDismiss?: () => void;
 }
 
-export const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
+export const Toast: React.FC<ToastProps> = React.memo(({ toast, onDismiss }) => {
   if (!toast) return null;
 
   const data: ToastItem = typeof toast === 'string' ? { message: toast, type: 'success' } : toast;
@@ -91,4 +91,4 @@ export const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
       </div>
     </AnimatePresence>
   );
-};
+});

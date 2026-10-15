@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Sparkles,
@@ -59,6 +59,7 @@ interface WorkspaceViewProps {
   userRole?: UserRole;
   collabBentoTiles?: CollaborativeBentoTile[];
   onUpdateCollabBentoTiles?: (tiles: CollaborativeBentoTile[]) => void;
+  settings?: { theme?: 'light' | 'dark' };
 }
 
 // 8 Tabs utilizing Monochrome Prototype Palette (Standard human working-memory chunking):
@@ -174,7 +175,8 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   onToggleDistractionFree,
   userRole = 'Student',
   collabBentoTiles,
-  onUpdateCollabBentoTiles
+  onUpdateCollabBentoTiles,
+  settings
 }) => {
   // Up to 8 Tabs State
   const [cards, setCards] = useState<FocusCardItem[]>(DEFAULT_EIGHT_TABS);
@@ -184,23 +186,12 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   const [viewMode, setViewMode] = useState<'dominant' | 'pile' | 'bento' | 'collab'>('dominant');
   const [bentoSubTab, setBentoSubTab] = useState<'adaptive' | 'collaborative'>('adaptive');
 
-  // Shared Bento CRDT tiles state
-  const [collabTiles, setCollabTiles] = useState<CollaborativeBentoTile[]>(
-    collabBentoTiles || initialCollaborativeBentoTiles
-  );
-
-  useEffect(() => {
-    if (collabBentoTiles) {
-      setCollabTiles(collabBentoTiles);
-    }
-  }, [collabBentoTiles]);
-
-  const handleUpdateCollabTiles = (nextTiles: CollaborativeBentoTile[]) => {
-    setCollabTiles(nextTiles);
+  // Use collabBentoTiles from props directly without duplicate state
+  const handleUpdateCollabTiles = useCallback((nextTiles: CollaborativeBentoTile[]) => {
     if (onUpdateCollabBentoTiles) {
       onUpdateCollabBentoTiles(nextTiles);
     }
-  };
+  }, [onUpdateCollabBentoTiles]);
 
   // Add Tab Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
@@ -217,9 +208,15 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     }
   };
 
-  // Focus Timer state (Pomodoro 25:00)
-  const [timerSeconds, setTimerSeconds] = useState(25 * 60);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  // Focus Timer state (Pomodoro 25:00) - persisted to localStorage
+  const [timerSeconds, setTimerSeconds] = useState(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('pomodoroSessionSeconds') : null;
+    return saved ? Math.max(0, parseInt(saved, 10)) : 25 * 60;
+  });
+  const [isTimerRunning, setIsTimerRunning] = useState(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('pomodoroSessionRunning') : null;
+    return saved === 'true';
+  });
 
   // Drag and Drop State for tabs & piles
   const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
@@ -236,18 +233,46 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
   );
 
   // Timer interval effect
+  const timerEndTimeRef = useRef<number | null>(null);
+
+  // Persist timer state to localStorage
   useEffect(() => {
-    let interval: any = null;
-    if (isTimerRunning && timerSeconds > 0) {
-      interval = setInterval(() => {
-        setTimerSeconds(prev => prev - 1);
-      }, 1000);
-    } else if (timerSeconds === 0) {
-      setIsTimerRunning(false);
-      onShowToast('🔔 Focus sprint complete! Take a restorative breath.');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pomodoroSessionSeconds', timerSeconds.toString());
+      localStorage.setItem('pomodoroSessionRunning', isTimerRunning.toString());
     }
+  }, [timerSeconds, isTimerRunning]);
+
+  useEffect(() => {
+    if (!isTimerRunning) {
+      timerEndTimeRef.current = null;
+      return;
+    }
+
+    // Set end time on first run
+    if (!timerEndTimeRef.current) {
+      timerEndTimeRef.current = Date.now() + timerSeconds * 1000;
+    }
+
+    const interval = setInterval(() => {
+      if (!timerEndTimeRef.current) return;
+
+      const now = Date.now();
+      const remainingMs = Math.max(0, timerEndTimeRef.current - now);
+      const remainingSeconds = Math.ceil(remainingMs / 1000);
+
+      if (remainingSeconds <= 0) {
+        setTimerSeconds(0);
+        setIsTimerRunning(false);
+        timerEndTimeRef.current = null;
+        onShowToast('🔔 Focus sprint complete! Take a restorative breath.');
+      } else {
+        setTimerSeconds(remainingSeconds);
+      }
+    }, 100);
+
     return () => clearInterval(interval);
-  }, [isTimerRunning, timerSeconds]);
+  }, [isTimerRunning, onShowToast]);
 
   const formatTimer = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -514,8 +539,15 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     }
   };
 
-  const dominantCard = cards.find(c => c.id === activeCardId) || cards[0];
-  const sideCards = cards.filter(c => c.id !== dominantCard.id);
+  const dominantCard = useMemo(
+    () => cards.find(c => c.id === activeCardId) || cards[0],
+    [cards, activeCardId]
+  );
+
+  const sideCards = useMemo(
+    () => cards.filter(c => c.id !== dominantCard.id),
+    [cards, dominantCard.id]
+  );
 
   // Stack Pile cycle controls
   const handleCyclePile = (direction: 'next' | 'prev') => {
@@ -820,7 +852,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
           {bentoSubTab === 'collaborative' ? (
             <CollaborativeBentoView
-              tiles={collabTiles}
+              tiles={collabBentoTiles || initialCollaborativeBentoTiles}
               onUpdateTiles={handleUpdateCollabTiles}
               onShowToast={onShowToast}
               isDistractionFree={isDistractionFree}
@@ -1074,7 +1106,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       {!isLayoutTransitioning && viewMode === 'collab' && (
         <div className="w-full flex-1 min-h-0 overflow-y-auto space-y-4 no-scrollbar pb-6 animate-fade-in">
           <CollaborativeBentoView
-            tiles={collabTiles}
+            tiles={collabBentoTiles || initialCollaborativeBentoTiles}
             onUpdateTiles={handleUpdateCollabTiles}
             onShowToast={onShowToast}
             isDistractionFree={isDistractionFree}
@@ -1443,6 +1475,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         currentCardCount={cards.length}
         resources={resources}
         onShowToast={onShowToast}
+        settings={settings}
       />
     </div>
   );

@@ -19,6 +19,7 @@ interface FocusAddCardModalProps {
   currentCardCount: number;
   resources: ResourceItem[];
   onShowToast: (msg: string) => void;
+  settings?: { theme?: 'light' | 'dark' };
 }
 
 export const FocusAddCardModal: React.FC<FocusAddCardModalProps> = ({
@@ -27,8 +28,10 @@ export const FocusAddCardModal: React.FC<FocusAddCardModalProps> = ({
   onAddCard,
   currentCardCount,
   resources,
-  onShowToast
+  onShowToast,
+  settings
 }) => {
+  const isDark = settings?.theme === 'dark';
   const [selectedPurpose, setSelectedPurpose] = useState<FocusCardPurpose>('notes');
   const [cardTitle, setCardTitle] = useState('');
   const [selectedResourceId, setSelectedResourceId] = useState<string>('');
@@ -191,9 +194,9 @@ export const FocusAddCardModal: React.FC<FocusAddCardModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="focus-modal-title"
-      className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 select-none animate-fade-in font-sans"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 select-none animate-fade-in font-sans ${isDark ? 'bg-black/80' : 'bg-white/60'}`}
     >
-      <div className="relative w-full max-w-md rounded-lg bg-neutral-900 border border-neutral-700 p-5 shadow-2xl flex flex-col gap-4">
+      <div className={`relative w-full max-w-md rounded-lg p-5 shadow-2xl flex flex-col gap-4 ${isDark ? 'bg-neutral-900 border border-neutral-700 text-white' : 'bg-neutral-50 border border-neutral-300 text-black'}`}>
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
           <div>

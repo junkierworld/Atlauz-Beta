@@ -14,10 +14,41 @@ export default defineConfig(() => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(moduleId) {
+            // Vendor chunks for better caching
+            if (moduleId.includes('node_modules/motion')) {
+              return 'vendor-motion';
+            }
+            if (moduleId.includes('node_modules/lucide-react')) {
+              return 'vendor-lucide';
+            }
+            if (moduleId.includes('node_modules/@capacitor')) {
+              return 'vendor-capacitor';
+            }
+            if (moduleId.includes('node_modules/@tailwindcss')) {
+              return 'vendor-tailwind';
+            }
+            // Separate large editor components
+            if (moduleId.includes('GoogleDocsEditor') ||
+                moduleId.includes('PresentationEditor') ||
+                moduleId.includes('NotebookViewer') ||
+                moduleId.includes('EbookReader') ||
+                moduleId.includes('LessonViewer') ||
+                moduleId.includes('NotepadViewer') ||
+                moduleId.includes('JournalViewer') ||
+                moduleId.includes('PdfViewer')) {
+              return 'editors';
+            }
+          }
+        }
+      }
+    },
     server: {
       port: 3000,
       host: '0.0.0.0',
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },

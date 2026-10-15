@@ -91,9 +91,10 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
 
   // CRDT Engine instance
   const reconcilerRef = useRef<BentoCrdtReconciler | null>(null);
+  const channelRef = useRef<BroadcastChannel | null>(null);
 
   useEffect(() => {
-    // Initialize CRDT reconciler with BroadcastChannel cross-tab listener
+    // Initialize CRDT reconciler — reconciler handles its own BroadcastChannel internally
     const reconciler = new BentoCrdtReconciler(
       (newTiles, op) => {
         if (op) {
@@ -108,30 +109,16 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
     );
     reconcilerRef.current = reconciler;
 
-    // Cross-tab message receiver
-    const channel = new BroadcastChannel('atlauz_bento_crdt_channel');
-    channel.onmessage = (event: MessageEvent<BentoSyncMessage>) => {
-      const msg = event.data;
-      if (!msg || msg.senderId === LOCAL_CLIENT_ID) return;
-
-      if (msg.type === 'CRDT_OP' && msg.operation) {
-        const nextTiles = applyCrdtOperation(tilesRef.current, msg.operation);
-        onUpdateTiles(nextTiles);
-        onShowToast(`Peer update synced via CRDT clock v${msg.operation.clock}`);
-      } else if (msg.type === 'FULL_SYNC' && msg.tiles) {
-        onUpdateTiles(msg.tiles);
-      }
-    };
-
     return () => {
       reconciler.destroy();
-      channel.close();
     };
-  }, [onUpdateTiles, onShowToast]);
+  }, []);
 
   // Periodic autonomous peer simulation (subtle, realistic co-presence)
   useEffect(() => {
     if (!isAutoSimActive) return;
+
+    const timeouts: NodeJS.Timeout[] = [];
 
     const interval = setInterval(() => {
       // Pick random simulated peer activity
@@ -186,8 +173,8 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
       onUpdateTiles(withEditing);
       reconcilerRef.current?.broadcastOperation(editOp);
 
-      // 2. Clear editing status after 2.5 seconds
-      setTimeout(() => {
+      // 2. Clear editing status after 2.5 seconds — track and cleanup timeout
+      const idleTimeout = setTimeout(() => {
         const idleOp: CrdtOperation = {
           opId: `op-${Date.now()}-idle`,
           tileId: chosen.tileId,
@@ -206,10 +193,15 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
         const withIdle = applyCrdtOperation(tilesRef.current, idleOp);
         onUpdateTiles(withIdle);
         reconcilerRef.current?.broadcastOperation(idleOp);
+        timeouts.splice(timeouts.indexOf(idleTimeout), 1);
       }, 2500);
+      timeouts.push(idleTimeout);
     }, 12000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      timeouts.forEach(clearTimeout);
+    };
   }, [isAutoSimActive, onUpdateTiles]);
 
   // Toggle Defrost State

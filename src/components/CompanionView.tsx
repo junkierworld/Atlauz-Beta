@@ -4,6 +4,7 @@ import {
   Activity,
   Sliders,
   MessageSquare,
+  Fingerprint,
   Save,
   RotateCcw,
   CheckCircle2,
@@ -12,15 +13,11 @@ import {
   Eye,
   Layers,
   Sparkles,
-  Waves,
-  TrendingUp,
-  Fish,
-  Snowflake
+  Waves
 } from 'lucide-react';
 import { FishTank } from './FishTank';
 import { AtlauzFish } from './AtlauzFish';
 import { AtlauzLogo } from './AtlauzLogo';
-import { StreakIcebergVisualizer } from './StreakIcebergVisualizer';
 import { CompanionState, CognitiveTelemetry, UserAccountSettings } from '../types';
 
 interface CompanionViewProps {
@@ -73,7 +70,7 @@ const EYE_OPTIONS = [
   { id: 4, title: 'Quad Marker', desc: '4-point geometric crosshair' }
 ];
 
-export const CompanionView: React.FC<CompanionViewProps> = ({
+export const CompanionView = React.memo(function CompanionViewComponent({
   companion,
   onUpdateCompanion,
   telemetry,
@@ -83,8 +80,7 @@ export const CompanionView: React.FC<CompanionViewProps> = ({
   onOpenFishing,
   onRenameFish,
   onSetPrimaryFish
-}) => {
-  const [activeCompanionTab, setActiveCompanionTab] = useState<'aquarium' | 'iceberg' | 'anatomy'>('aquarium');
+}: CompanionViewProps) {
   const [activeComponentTab, setActiveComponentTab] = useState<'head' | 'body' | 'tail' | 'eyes' | 'colors'>('head');
   const [msg1, setMsg1] = useState(companion.customMessages[0]);
   const [msg2, setMsg2] = useState(companion.customMessages[1]);
@@ -102,7 +98,7 @@ export const CompanionView: React.FC<CompanionViewProps> = ({
     onUpdateSettings({
       username: handleInput
     });
-    onShowToast('Companion Anatomy & Preferences Synced');
+    onShowToast('Companion Anatomy & Account Preferences Synced');
     setTimeout(() => setIsApplying(false), 600);
   };
 
@@ -122,389 +118,743 @@ export const CompanionView: React.FC<CompanionViewProps> = ({
     setMsg2('Zero friction: 0 context switches across all-in-one tools.');
     setMsg3('Reaching New Depths: Milestone unlocked.');
     setHandleInput('polymath');
-    onShowToast('Companion anatomy reset to default specification');
+    onShowToast('Companion anatomy reset to default prototype specification');
   };
 
+  const isDark = settings.theme === 'dark';
+
   return (
-    <div className="flex flex-col w-full max-w-3xl mx-auto space-y-4 animate-fade-in pb-8 font-sans">
-      {/* Top Banner: Companion & Aquarium Interface with Mode Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-neutral-900 px-4 py-3 rounded-xl border border-neutral-700 gap-3">
-        <div className="flex items-center gap-2.5">
+    <div className="flex flex-col w-full max-w-2xl mx-auto space-y-4 animate-fade-in pb-8 font-sans">
+      {/* Top Banner: Companion & Aquarium Interface */}
+      <div className={`flex items-center justify-between px-4 py-2.5 rounded-lg border ${
+        isDark
+          ? 'bg-neutral-900 border-neutral-700'
+          : 'bg-neutral-100 border-neutral-300'
+      }`}>
+        <div className="flex items-center gap-2">
           <AtlauzLogo variant="icon" size={20} animated={false} />
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-white text-sm sm:text-base font-mono uppercase tracking-wide">
-              Companion & Aquarium
+          <div className="flex items-center gap-1.5">
+            <span className={`font-bold text-sm sm:text-base ${
+              isDark ? 'text-white' : 'text-neutral-900'
+            }`}>
+              COMPANION WORKSHOP
             </span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black text-neutral-200 border border-neutral-700 font-bold">
+            <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold ${
+              isDark
+                ? 'bg-neutral-800 text-neutral-300 border-neutral-700'
+                : 'bg-neutral-200 text-neutral-700 border-neutral-300'
+            }`}>
               {companion.name || 'Finley'}
             </span>
           </div>
         </div>
-
-        {/* Companion Sub-Tabs (Aquarium | Streak Snowflake | Anatomy Fish) */}
-        <div
-          role="tablist"
-          aria-label="Companion view modes"
-          className="flex items-center gap-1 bg-black p-1 rounded-lg border border-neutral-800 text-xs font-mono overflow-x-auto no-scrollbar"
-        >
-          <button
-            role="tab"
-            aria-selected={activeCompanionTab === 'aquarium'}
-            onClick={() => setActiveCompanionTab('aquarium')}
-            className={`min-touch-target px-3.5 py-1.5 rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              activeCompanionTab === 'aquarium'
-                ? 'bg-white text-black font-bold ring-1 ring-white'
-                : 'text-neutral-400 hover:text-white'
-            }`}
-          >
-            <Waves className="w-3.5 h-3.5" />
-            <span>Aquarium</span>
-          </button>
-
-          <button
-            role="tab"
-            aria-selected={activeCompanionTab === 'iceberg'}
-            onClick={() => {
-              setActiveCompanionTab('iceberg');
-              onShowToast('Opening Streak History Iceberg');
-            }}
-            className={`min-touch-target px-3.5 py-1.5 rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              activeCompanionTab === 'iceberg'
-                ? 'bg-white text-black font-bold ring-1 ring-white'
-                : 'text-cyan-300 hover:text-white'
-            }`}
-          >
-            <Snowflake className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Streak</span>
-          </button>
-
-          <button
-            role="tab"
-            aria-selected={activeCompanionTab === 'anatomy'}
-            onClick={() => setActiveCompanionTab('anatomy')}
-            className={`min-touch-target px-3.5 py-1.5 rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              activeCompanionTab === 'anatomy'
-                ? 'bg-white text-black font-bold ring-1 ring-white'
-                : 'text-neutral-400 hover:text-white'
-            }`}
-          >
-            <Fish className="w-3.5 h-3.5" />
-            <span>Anatomy</span>
-          </button>
+        <div className={`flex items-center gap-1.5 text-xs font-mono ${
+          isDark ? 'text-neutral-400' : 'text-neutral-600'
+        }`}>
+          <span className={`w-2 h-2 rounded-full ${
+            isDark ? 'bg-white' : 'bg-neutral-900'
+          }`} />
+          <span className={isDark ? 'text-neutral-300' : 'text-neutral-700'}>
+            [{companion.fishes?.length || 1}/5 In Tank]
+          </span>
         </div>
       </div>
 
-      {/* MODE 1: LIVING RECTANGULAR FISHTANK & TELEMETRY */}
-      {activeCompanionTab === 'aquarium' && (
-        <div className="space-y-4 animate-fade-in">
-          <section className="relative overflow-hidden rounded-xl bg-neutral-900 border border-neutral-700 p-3 sm:p-4 shadow-xl">
-            <div className="relative z-10 flex flex-col space-y-3">
-              {/* State Machine Header */}
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-black border border-neutral-800 text-white">
-                  <Code className="w-3.5 h-3.5 text-neutral-400" />
-                  <span className="font-mono text-[11px] text-neutral-300">
-                    {companion.stateMachine}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-neutral-300 px-2.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 font-mono">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                  <span>[{companion.fishes?.length || 1}/5 Active In Tank]</span>
-                </div>
-              </div>
-
-              {/* Rectangular Fish Tank */}
-              <FishTank
-                fishes={companion.fishes || []}
-                primaryFishId={companion.primaryFishId || companion.fishes?.[0]?.id}
-                telemetry={telemetry}
-                companionState={companion}
-                onRenameFish={onRenameFish}
-                onSetPrimaryFish={onSetPrimaryFish}
-                onOpenFishing={onOpenFishing}
-                onShowToast={onShowToast}
-              />
-
-              {/* Telemetry Dials Strip */}
-              <div className="grid grid-cols-3 gap-2 w-full pt-1 font-mono">
-                {/* Dial 1: Cognitive Vital */}
-                <div className="flex flex-col items-center justify-center p-2.5 rounded-lg bg-black border border-neutral-800">
-                  <span className="text-[11px] text-neutral-400 flex items-center gap-1">
-                    <Activity className="w-3.5 h-3.5 text-neutral-400" /> Vital
-                  </span>
-                  <span className="text-base sm:text-lg font-bold text-white tracking-tight tabular-nums">
-                    {telemetry.cognitiveVital}%
-                  </span>
-                  <span className="text-[9px] text-neutral-500 uppercase">Calibrated</span>
-                </div>
-
-                {/* Dial 2: Session Dial */}
-                <div className="flex flex-col items-center justify-center p-2.5 rounded-lg bg-black border border-neutral-800">
-                  <span className="text-[11px] text-neutral-400 flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-neutral-400" /> Session
-                  </span>
-                  <span className="text-base sm:text-lg font-bold text-white tracking-tight tabular-nums">
-                    {telemetry.sessionMinutes}m
-                  </span>
-                  <span className="text-[9px] text-neutral-500 uppercase">Focus Elapsed</span>
-                </div>
-
-                {/* Dial 3: Streak & Iceberg Quick Jump */}
-                <div
-                  onClick={() => setActiveCompanionTab('iceberg')}
-                  className="flex flex-col items-center justify-center p-2.5 rounded-lg bg-black border border-cyan-800/80 hover:border-cyan-400 cursor-pointer group transition-all"
-                  title="Click to open full Streak History Iceberg"
-                >
-                  <span className="text-[11px] text-cyan-300 flex items-center gap-1">
-                    <span>🏔️</span> Iceberg
-                  </span>
-                  <span className="text-base sm:text-lg font-bold text-white tracking-tight tabular-nums group-hover:text-cyan-200">
-                    {telemetry.streakDays}d Streak
-                  </span>
-                  <span className="text-[9px] text-cyan-400 font-bold group-hover:underline">
-                    [Inspect History →]
-                  </span>
-                </div>
-              </div>
+      {/* SECTION 1: Living Rectangular Fishtank Container */}
+      <section className={`relative overflow-hidden rounded-lg border p-3 sm:p-4 ${
+        isDark
+          ? 'bg-neutral-900 border-neutral-700'
+          : 'bg-neutral-50 border-neutral-300'
+      }`}>
+        <div className="relative z-10 flex flex-col space-y-3">
+          {/* State Machine Specification Header */}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded border ${
+              isDark
+                ? 'bg-black border-neutral-800 text-white'
+                : 'bg-neutral-200 border-neutral-400 text-neutral-900'
+            }`}>
+              <Code className={`w-3.5 h-3.5 ${
+                isDark ? 'text-neutral-400' : 'text-neutral-600'
+              }`} />
+              <span className={`font-mono text-[11px] ${
+                isDark ? 'text-neutral-300' : 'text-neutral-700'
+              }`}>
+                {companion.stateMachine}
+              </span>
             </div>
-          </section>
-
-          {/* Quick Iceberg Teaser Card */}
-          <div
-            onClick={() => setActiveCompanionTab('iceberg')}
-            className="p-4 rounded-xl bg-gradient-to-r from-[#041322] to-neutral-900 border border-cyan-900/60 hover:border-cyan-500 cursor-pointer transition-all flex items-center justify-between gap-3 shadow-lg"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🏔️</span>
-              <div>
-                <span className="text-xs font-mono font-bold text-white block">
-                  Streak History Iceberg Visualizer Active
-                </span>
-                <span className="text-[11px] text-cyan-300/80 font-mono">
-                  Compare performance across Weeks, Months, and Year with bubble ice and blue academic freeze strata.
-                </span>
-              </div>
+            <div className={`flex items-center gap-1.5 text-xs px-2 py-0.5 rounded border font-mono ${
+              isDark
+                ? 'text-neutral-300 bg-neutral-800 border-neutral-700'
+                : 'text-neutral-700 bg-neutral-200 border-neutral-400'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                isDark ? 'bg-white' : 'bg-neutral-900'
+              }`} />
+              <span>ACTIVE SPECIMEN</span>
             </div>
-            <button className="px-3 py-1.5 rounded bg-cyan-950 hover:bg-cyan-900 border border-cyan-700 text-cyan-200 text-xs font-mono font-bold shrink-0">
-              Open Iceberg →
-            </button>
           </div>
-        </div>
-      )}
 
-      {/* MODE 2: STREAK HISTORY ICEBERG VISUALIZER */}
-      {activeCompanionTab === 'iceberg' && (
-        <div className="animate-fade-in">
-          <StreakIcebergVisualizer
+          {/* Rectangular Fish Tank Component */}
+          <FishTank
+            fishes={companion.fishes || []}
+            primaryFishId={companion.primaryFishId || companion.fishes?.[0]?.id}
             telemetry={telemetry}
+            companionState={companion}
+            onRenameFish={onRenameFish}
+            onSetPrimaryFish={onSetPrimaryFish}
+            onOpenFishing={onOpenFishing}
             onShowToast={onShowToast}
+            settings={settings}
           />
-        </div>
-      )}
 
-      {/* MODE 3: ANATOMY WORKSHOP */}
-      {activeCompanionTab === 'anatomy' && (
-        <section className="flex flex-col rounded-xl bg-neutral-900 border border-neutral-700 p-4 sm:p-5 space-y-4 animate-fade-in">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="font-bold text-white text-base flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-white" /> Modular Anatomy Configuration
+          {/* Telemetry & Fishing Rod Dials */}
+          <div className="grid grid-cols-3 gap-2 w-full pt-1 font-mono">
+            {/* Dial 1: Cognitive Vital */}
+            <div className={`flex flex-col items-center justify-center p-2.5 rounded border ${
+              isDark
+                ? 'bg-black border-neutral-800'
+                : 'bg-white border-neutral-300'
+            }`}>
+              <span className={`text-[11px] flex items-center gap-1 ${
+                isDark ? 'text-neutral-400' : 'text-neutral-600'
+              }`}>
+                <Activity className="w-3.5 h-3.5" /> Vital
               </span>
-              <span className="text-xs text-neutral-400">
-                Tune specimen head, chassis body, tail geometry, and optical reticle
+              <span className={`text-base sm:text-lg font-bold tracking-tight tabular-nums ${
+                isDark ? 'text-white' : 'text-neutral-900'
+              }`}>
+                {telemetry.cognitiveVital}%
+              </span>
+              <span className={`text-[9px] uppercase ${
+                isDark ? 'text-neutral-500' : 'text-neutral-500'
+              }`}>Calibrated</span>
+            </div>
+
+            {/* Dial 2: Session Dial */}
+            <div className={`flex flex-col items-center justify-center p-2.5 rounded border ${
+              isDark
+                ? 'bg-black border-neutral-800'
+                : 'bg-white border-neutral-300'
+            }`}>
+              <span className={`text-[11px] flex items-center gap-1 ${
+                isDark ? 'text-neutral-400' : 'text-neutral-600'
+              }`}>
+                <Clock className={`w-3.5 h-3.5 ${
+                  isDark ? 'text-neutral-400' : 'text-neutral-600'
+                }`} /> Session
+              </span>
+              <span className={`text-base sm:text-lg font-bold tracking-tight tabular-nums ${
+                isDark ? 'text-white' : 'text-neutral-900'
+              }`}>
+                {telemetry.sessionMinutes}m
+              </span>
+              <span className={`text-[9px] uppercase ${
+                isDark ? 'text-neutral-500' : 'text-neutral-500'
+              }`}>Focus Elapsed</span>
+            </div>
+
+            {/* Dial 3: Fishing Rod Cast Streak */}
+            <div
+              onClick={onOpenFishing}
+              className={`flex flex-col items-center justify-center p-2.5 rounded border hover:border-white cursor-pointer group transition-all ${
+                isDark
+                  ? 'bg-black border-neutral-700'
+                  : 'bg-neutral-100 border-neutral-300 hover:border-neutral-600'
+              }`}
+              title="Click to cast fishing line"
+            >
+              <span className={`text-[11px] flex items-center gap-1 ${
+                isDark ? 'text-neutral-300' : 'text-neutral-700'
+              }`}>
+                <span>⚓</span> Cast Rod
+              </span>
+              <span className={`text-base sm:text-lg font-bold tracking-tight tabular-nums ${
+                isDark ? 'text-white' : 'text-neutral-900'
+              }`}>
+                {telemetry.streakDays}d Streak
+              </span>
+              <span className={`text-[9px] font-bold ${
+                isDark ? 'text-neutral-300' : 'text-neutral-700'
+              }`}>
+                [{Math.floor(telemetry.streakDays / 20)} Available]
               </span>
             </div>
-            <button
-              onClick={() => onUpdateCompanion({ featuresEnabled: !companion.featuresEnabled })}
-              className={`w-10 h-5 rounded-full p-0.5 transition-colors border ${
-                companion.featuresEnabled ? 'bg-white border-white' : 'bg-neutral-800 border-neutral-700'
-              }`}
-            >
-              <div
-                className={`w-4 h-4 rounded-full transition-transform ${
-                  companion.featuresEnabled ? 'translate-x-5 bg-black' : 'translate-x-0 bg-neutral-400'
-                }`}
-              />
-            </button>
           </div>
+        </div>
+      </section>
 
-          {companion.featuresEnabled && (
-            <div className="space-y-4">
-              {/* Live Interactive Specimen Stage */}
-              <div className="relative rounded-xl bg-black border border-neutral-800 p-5 flex flex-col items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 bg-prototype-grid opacity-15 pointer-events-none" />
-                <div className="absolute top-2 left-2 text-[9px] font-mono text-neutral-500">
-                  SPECIMEN_CHASSIS_01 // LIVE_VIEW
-                </div>
+      {/* SECTION 2: ATLAUZ FISH ANATOMY & MODULAR COMPONENT WORKSHOP */}
+      <section className={`flex flex-col rounded-lg border p-4 sm:p-5 space-y-4 ${
+        isDark
+          ? 'bg-neutral-900 border-neutral-700'
+          : 'bg-neutral-50 border-neutral-300'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className={`font-bold text-base flex items-center gap-2 ${
+              isDark ? 'text-white' : 'text-neutral-900'
+            }`}>
+              <Sliders className={`w-4 h-4 ${
+                isDark ? 'text-white' : 'text-neutral-900'
+              }`} /> Modular Anatomy Configuration
+            </span>
+            <span className={`text-xs ${
+              isDark ? 'text-neutral-400' : 'text-neutral-600'
+            }`}>
+              Tune specimen head, chassis body, tail geometry, and optical reticle
+            </span>
+          </div>
+          <button
+            onClick={() => onUpdateCompanion({ featuresEnabled: !companion.featuresEnabled })}
+            className={`w-10 h-5 rounded-full p-0.5 transition-colors border ${
+              companion.featuresEnabled
+                ? isDark ? 'bg-white border-white' : 'bg-neutral-900 border-neutral-900'
+                : isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-neutral-300 border-neutral-300'
+            }`}
+          >
+            <div
+              className={`w-4 h-4 rounded-full transition-transform ${
+                companion.featuresEnabled
+                  ? isDark ? 'translate-x-5 bg-black' : 'translate-x-5 bg-white'
+                  : isDark ? 'translate-x-0 bg-neutral-400' : 'translate-x-0 bg-neutral-500'
+              }`}
+            />
+          </button>
+        </div>
 
-                <div className="py-6 flex items-center justify-center">
-                  <AtlauzFish
-                    headIndex={companion.headIndex}
-                    bodyIndex={companion.bodyIndex}
-                    tailIndex={companion.tailIndex}
-                    eyesIndex={companion.eyesIndex}
-                    baseColor={companion.baseColor}
-                    accentColor={companion.accentColor}
-                    size={160}
-                    animated={true}
-                  />
-                </div>
-
-                <div className="text-center">
-                  <span className="text-xs font-mono font-bold text-white block">
-                    {primaryFish?.name || companion.name} ({primaryFish?.personality || 'Balanced'})
-                  </span>
-                  <span className="text-[10px] text-neutral-400 font-mono">
-                    Species: {primaryFish?.species || 'Monochrome Specimen'} • Scale: 1.8x
-                  </span>
-                </div>
+        {companion.featuresEnabled && (
+          <div className="space-y-4">
+            {/* Live Interactive Specimen Stage */}
+            <div className={`relative rounded p-5 flex flex-col items-center justify-center overflow-hidden border ${
+              isDark
+                ? 'bg-black border-neutral-800'
+                : 'bg-neutral-100 border-neutral-300'
+            }`}>
+              <div className={`absolute inset-0 bg-prototype-grid opacity-15 pointer-events-none ${
+                isDark ? '' : 'brightness-[0.6]'
+              }`} />
+              <div className={`absolute top-2 left-2 text-[9px] font-mono ${
+                isDark ? 'text-neutral-500' : 'text-neutral-500'
+              }`}>
+                [CAD VIEW: ACTIVE WIREFRAME]
               </div>
 
-              {/* Anatomy Component Tabs */}
-              <div className="flex items-center gap-1 bg-black p-1 rounded-lg border border-neutral-800 overflow-x-auto text-xs font-mono">
-                {(['head', 'body', 'tail', 'eyes', 'colors'] as const).map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveComponentTab(tab)}
-                    className={`flex-1 min-touch-target py-1.5 px-3 rounded text-center transition-all capitalize ${
-                      activeComponentTab === tab
-                        ? 'bg-white text-black font-bold'
-                        : 'text-neutral-400 hover:text-white'
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+              {/* Swimming Specimen Preview */}
+              <div className="relative z-10 py-2">
+                <AtlauzFish
+                  headIndex={companion.headIndex || 1}
+                  bodyIndex={companion.bodyIndex || 1}
+                  tailIndex={companion.tailIndex || 1}
+                  eyesIndex={companion.eyesIndex || 1}
+                  baseColor={companion.baseColor || '#ffffff'}
+                  accentColor={companion.accentColor || '#888888'}
+                  eyeColor="#ffffff"
+                  size={140}
+                  animated={true}
+                  isSwimming={true}
+                  name={primaryFish?.name || companion.name}
+                  showName={true}
+                />
               </div>
 
-              {/* Head Selector */}
-              {activeComponentTab === 'head' && (
-                <div className="grid grid-cols-2 gap-2 font-mono">
-                  {HEAD_OPTIONS.map(opt => (
+              {/* Specification Chips Preview */}
+              <div className="relative z-10 mt-2 flex flex-wrap items-center justify-center gap-1.5 text-[10px] font-mono">
+                <span className={`px-2 py-0.5 rounded border ${
+                  isDark
+                    ? 'bg-neutral-900 text-neutral-300 border-neutral-800'
+                    : 'bg-neutral-200 text-neutral-700 border-neutral-300'
+                }`}>
+                  Head: {HEAD_OPTIONS[(companion.headIndex || 1) - 1]?.title.split(' ')[0]}
+                </span>
+                <span className={`px-2 py-0.5 rounded border ${
+                  isDark
+                    ? 'bg-neutral-900 text-neutral-300 border-neutral-800'
+                    : 'bg-neutral-200 text-neutral-700 border-neutral-300'
+                }`}>
+                  Body: {BODY_OPTIONS[(companion.bodyIndex || 1) - 1]?.title.split(' ')[0]}
+                </span>
+                <span className={`px-2 py-0.5 rounded border ${
+                  isDark
+                    ? 'bg-neutral-900 text-neutral-300 border-neutral-800'
+                    : 'bg-neutral-200 text-neutral-700 border-neutral-300'
+                }`}>
+                  Tail: {TAIL_OPTIONS[(companion.tailIndex || 1) - 1]?.title.split(' ')[0]}
+                </span>
+                <span className={`px-2 py-0.5 rounded font-bold ${
+                  isDark
+                    ? 'bg-white text-black'
+                    : 'bg-neutral-900 text-white'
+                }`}>
+                  Optic: {EYE_OPTIONS[(companion.eyesIndex || 1) - 1]?.title.split(' ')[0]}
+                </span>
+              </div>
+            </div>
+
+            {/* Component Anatomy Navigation Tabs */}
+            <div className={`grid grid-cols-5 gap-1 p-1 rounded border font-mono ${
+              isDark
+                ? 'bg-black border-neutral-800'
+                : 'bg-neutral-200 border-neutral-300'
+            }`}>
+              <button
+                onClick={() => setActiveComponentTab('head')}
+                className={`py-1.5 text-xs font-bold rounded transition-all flex flex-col sm:flex-row items-center justify-center gap-1 ${
+                  activeComponentTab === 'head'
+                    ? isDark ? 'bg-white text-black' : 'bg-neutral-900 text-white'
+                    : isDark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Head</span>
+              </button>
+
+              <button
+                onClick={() => setActiveComponentTab('body')}
+                className={`py-1.5 text-xs font-bold rounded transition-all flex flex-col sm:flex-row items-center justify-center gap-1 ${
+                  activeComponentTab === 'body'
+                    ? isDark ? 'bg-white text-black' : 'bg-neutral-900 text-white'
+                    : isDark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100'
+                }`}
+              >
+                <Waves className="w-3.5 h-3.5" />
+                <span>Body</span>
+              </button>
+
+              <button
+                onClick={() => setActiveComponentTab('tail')}
+                className={`py-1.5 text-xs font-bold rounded transition-all flex flex-col sm:flex-row items-center justify-center gap-1 ${
+                  activeComponentTab === 'tail'
+                    ? isDark ? 'bg-white text-black' : 'bg-neutral-900 text-white'
+                    : isDark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Tail</span>
+              </button>
+
+              <button
+                onClick={() => setActiveComponentTab('eyes')}
+                className={`py-1.5 text-xs font-bold rounded transition-all flex flex-col sm:flex-row items-center justify-center gap-1 ${
+                  activeComponentTab === 'eyes'
+                    ? isDark ? 'bg-white text-black' : 'bg-neutral-900 text-white'
+                    : isDark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>Optics</span>
+              </button>
+
+              <button
+                onClick={() => setActiveComponentTab('colors')}
+                className={`py-1.5 text-xs font-bold rounded transition-all flex flex-col sm:flex-row items-center justify-center gap-1 ${
+                  activeComponentTab === 'colors'
+                    ? isDark ? 'bg-white text-black' : 'bg-neutral-900 text-white'
+                    : isDark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100'
+                }`}
+              >
+                <Palette className="w-3.5 h-3.5" />
+                <span>Grayscale</span>
+              </button>
+            </div>
+
+            {/* TAB CONTENT: 1. HEAD COMPONENT */}
+            {activeComponentTab === 'head' && (
+              <div className="grid grid-cols-2 gap-2">
+                {HEAD_OPTIONS.map(opt => {
+                  const isSelected = (companion.headIndex || 1) === opt.id;
+                  return (
                     <button
                       key={opt.id}
-                      onClick={() => onUpdateCompanion({ headIndex: opt.id })}
-                      className={`p-3 rounded-lg border text-left transition-all ${
-                        companion.headIndex === opt.id
-                          ? 'bg-neutral-800 border-white text-white shadow'
-                          : 'bg-black border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                      onClick={() => {
+                        onUpdateCompanion({ headIndex: opt.id });
+                        onShowToast(`Head component calibrated: ${opt.title}`);
+                      }}
+                      className={`p-3 rounded border text-left transition-all flex flex-col justify-between ${
+                        isSelected
+                          ? isDark ? 'bg-neutral-800 border-white text-white' : 'bg-neutral-200 border-neutral-900 text-neutral-900'
+                          : isDark ? 'bg-black border-neutral-800 text-neutral-300 hover:border-neutral-600' : 'bg-white border-neutral-300 text-neutral-700 hover:border-neutral-600'
                       }`}
                     >
-                      <span className="text-xs font-bold block">{opt.title}</span>
-                      <span className="text-[10px] text-neutral-500">{opt.desc}</span>
+                      <div className="flex items-center justify-between w-full">
+                        <span className="font-bold text-xs">{opt.title}</span>
+                        {isSelected && <span className={`w-2 h-2 rounded-full ${isDark ? 'bg-white' : 'bg-neutral-900'}`} />}
+                      </div>
+                      <span className={`text-[11px] mt-1 ${
+                        isDark ? 'text-neutral-400' : 'text-neutral-600'
+                      }`}>{opt.desc}</span>
                     </button>
-                  ))}
-                </div>
-              )}
+                  );
+                })}
+              </div>
+            )}
 
-              {/* Body Selector */}
-              {activeComponentTab === 'body' && (
-                <div className="grid grid-cols-2 gap-2 font-mono">
-                  {BODY_OPTIONS.map(opt => (
+            {/* TAB CONTENT: 2. BODY COMPONENT */}
+            {activeComponentTab === 'body' && (
+              <div className="grid grid-cols-2 gap-2">
+                {BODY_OPTIONS.map(opt => {
+                  const isSelected = (companion.bodyIndex || 1) === opt.id;
+                  return (
                     <button
                       key={opt.id}
-                      onClick={() => onUpdateCompanion({ bodyIndex: opt.id })}
-                      className={`p-3 rounded-lg border text-left transition-all ${
-                        companion.bodyIndex === opt.id
-                          ? 'bg-neutral-800 border-white text-white shadow'
-                          : 'bg-black border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                      onClick={() => {
+                        onUpdateCompanion({ bodyIndex: opt.id });
+                        onShowToast(`Body component calibrated: ${opt.title}`);
+                      }}
+                      className={`p-3 rounded border text-left transition-all flex flex-col justify-between ${
+                        isSelected
+                          ? isDark ? 'bg-neutral-800 border-white text-white' : 'bg-neutral-200 border-neutral-900 text-neutral-900'
+                          : isDark ? 'bg-black border-neutral-800 text-neutral-300 hover:border-neutral-600' : 'bg-white border-neutral-300 text-neutral-700 hover:border-neutral-600'
                       }`}
                     >
-                      <span className="text-xs font-bold block">{opt.title}</span>
-                      <span className="text-[10px] text-neutral-500">{opt.desc}</span>
+                      <div className="flex items-center justify-between w-full">
+                        <span className="font-bold text-xs">{opt.title}</span>
+                        {isSelected && <span className={`w-2 h-2 rounded-full ${isDark ? 'bg-white' : 'bg-neutral-900'}`} />}
+                      </div>
+                      <span className={`text-[11px] mt-1 ${
+                        isDark ? 'text-neutral-400' : 'text-neutral-600'
+                      }`}>{opt.desc}</span>
                     </button>
-                  ))}
-                </div>
-              )}
+                  );
+                })}
+              </div>
+            )}
 
-              {/* Tail Selector */}
-              {activeComponentTab === 'tail' && (
-                <div className="grid grid-cols-2 gap-2 font-mono">
-                  {TAIL_OPTIONS.map(opt => (
+            {/* TAB CONTENT: 3. TAIL COMPONENT */}
+            {activeComponentTab === 'tail' && (
+              <div className="grid grid-cols-2 gap-2">
+                {TAIL_OPTIONS.map(opt => {
+                  const isSelected = (companion.tailIndex || 1) === opt.id;
+                  return (
                     <button
                       key={opt.id}
-                      onClick={() => onUpdateCompanion({ tailIndex: opt.id })}
-                      className={`p-3 rounded-lg border text-left transition-all ${
-                        companion.tailIndex === opt.id
-                          ? 'bg-neutral-800 border-white text-white shadow'
-                          : 'bg-black border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                      onClick={() => {
+                        onUpdateCompanion({ tailIndex: opt.id });
+                        onShowToast(`Tail propulsion calibrated: ${opt.title}`);
+                      }}
+                      className={`p-3 rounded border text-left transition-all flex flex-col justify-between ${
+                        isSelected
+                          ? isDark ? 'bg-neutral-800 border-white text-white' : 'bg-neutral-200 border-neutral-900 text-neutral-900'
+                          : isDark ? 'bg-black border-neutral-800 text-neutral-300 hover:border-neutral-600' : 'bg-white border-neutral-300 text-neutral-700 hover:border-neutral-600'
                       }`}
                     >
-                      <span className="text-xs font-bold block">{opt.title}</span>
-                      <span className="text-[10px] text-neutral-500">{opt.desc}</span>
+                      <div className="flex items-center justify-between w-full">
+                        <span className="font-bold text-xs">{opt.title}</span>
+                        {isSelected && <span className={`w-2 h-2 rounded-full ${isDark ? 'bg-white' : 'bg-neutral-900'}`} />}
+                      </div>
+                      <span className={`text-[11px] mt-1 ${
+                        isDark ? 'text-neutral-400' : 'text-neutral-600'
+                      }`}>{opt.desc}</span>
                     </button>
-                  ))}
-                </div>
-              )}
+                  );
+                })}
+              </div>
+            )}
 
-              {/* Eyes Selector */}
-              {activeComponentTab === 'eyes' && (
-                <div className="grid grid-cols-2 gap-2 font-mono">
-                  {EYE_OPTIONS.map(opt => (
+            {/* TAB CONTENT: 4. EYES COMPONENT */}
+            {activeComponentTab === 'eyes' && (
+              <div className="grid grid-cols-2 gap-2">
+                {EYE_OPTIONS.map(opt => {
+                  const isSelected = (companion.eyesIndex || 1) === opt.id;
+                  return (
                     <button
                       key={opt.id}
-                      onClick={() => onUpdateCompanion({ eyesIndex: opt.id })}
-                      className={`p-3 rounded-lg border text-left transition-all ${
-                        companion.eyesIndex === opt.id
-                          ? 'bg-neutral-800 border-white text-white shadow'
-                          : 'bg-black border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                      onClick={() => {
+                        onUpdateCompanion({ eyesIndex: opt.id });
+                        onShowToast(`Optical reticle calibrated: ${opt.title}`);
+                      }}
+                      className={`p-3 rounded border text-left transition-all flex flex-col justify-between ${
+                        isSelected
+                          ? isDark ? 'bg-neutral-800 border-white text-white' : 'bg-neutral-200 border-neutral-900 text-neutral-900'
+                          : isDark ? 'bg-black border-neutral-800 text-neutral-300 hover:border-neutral-600' : 'bg-white border-neutral-300 text-neutral-700 hover:border-neutral-600'
                       }`}
                     >
-                      <span className="text-xs font-bold block">{opt.title}</span>
-                      <span className="text-[10px] text-neutral-500">{opt.desc}</span>
+                      <div className="flex items-center justify-between w-full">
+                        <span className="font-bold text-xs">{opt.title}</span>
+                        {isSelected && <span className={`w-2 h-2 rounded-full ${isDark ? 'bg-white' : 'bg-neutral-900'}`} />}
+                      </div>
+                      <span className={`text-[11px] mt-1 ${
+                        isDark ? 'text-neutral-400' : 'text-neutral-600'
+                      }`}>{opt.desc}</span>
                     </button>
-                  ))}
-                </div>
-              )}
+                  );
+                })}
+              </div>
+            )}
 
-              {/* Colors Swatches */}
-              {activeComponentTab === 'colors' && (
-                <div className="space-y-3 font-mono">
-                  <div>
-                    <span className="text-xs text-neutral-400 block mb-2">Base Specimen Chassis Color:</span>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {COLOR_SWATCHES.map(swatch => (
+            {/* TAB CONTENT: 5. COLORS & PALETTE */}
+            {activeComponentTab === 'colors' && (
+              <div className="space-y-3 font-sans">
+                {/* Base Body Tone */}
+                <div className={`p-3 rounded border space-y-2 ${
+                  isDark
+                    ? 'bg-black border-neutral-800'
+                    : 'bg-neutral-100 border-neutral-300'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className={`font-semibold text-xs ${
+                      isDark ? 'text-white' : 'text-neutral-900'
+                    }`}>Chassis Base Shading</span>
+                    <div className="flex items-center gap-2">
+                      {COLOR_SWATCHES.map(sw => (
                         <button
-                          key={swatch.hex}
-                          onClick={() => onUpdateCompanion({ baseColor: swatch.hex })}
-                          style={{ backgroundColor: swatch.hex }}
-                          title={swatch.name}
-                          className={`w-9 h-9 rounded-lg border-2 transition-transform ${
-                            companion.baseColor === swatch.hex
-                              ? 'border-cyan-400 scale-110 shadow'
-                              : 'border-neutral-700 hover:scale-105'
+                          key={sw.name}
+                          onClick={() => {
+                            onUpdateCompanion({ baseColor: sw.hex });
+                            if (primaryFish) {
+                              onRenameFish(primaryFish.id, primaryFish.name);
+                            }
+                          }}
+                          className={`w-5 h-5 rounded border transition-transform ${
+                            companion.baseColor === sw.hex ? 'scale-110 border-white ring-2 ring-white/50' : isDark ? 'border-neutral-700' : 'border-neutral-400'
                           }`}
+                          style={{ backgroundColor: sw.hex }}
+                          title={sw.name}
                         />
                       ))}
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* Action Dock */}
-          <div className="flex items-center gap-2 pt-2 font-mono">
-            <button
-              onClick={handleApply}
-              disabled={isApplying}
-              className="flex-1 py-2.5 px-4 rounded-lg bg-white text-black font-bold text-xs flex items-center justify-center gap-2 hover:bg-neutral-200 active:scale-95 transition-all"
-            >
-              <Save className="w-4 h-4" />
-              <span>{isApplying ? 'SAVING...' : 'SAVE ANATOMY PREFERENCES'}</span>
-            </button>
-
-            <button
-              onClick={handleReset}
-              title="Reset to Factory Defaults"
-              className="p-2.5 rounded-lg bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-white hover:bg-neutral-700 active:scale-95 transition-all text-xs font-bold flex items-center gap-1"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span className="hidden sm:inline">RESET</span>
-            </button>
+                {/* Accent Shading */}
+                <div className={`p-3 rounded border space-y-2 ${
+                  isDark
+                    ? 'bg-black border-neutral-800'
+                    : 'bg-neutral-100 border-neutral-300'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className={`font-semibold text-xs ${
+                      isDark ? 'text-white' : 'text-neutral-900'
+                    }`}>Fin & Accent Shading</span>
+                    <div className="flex items-center gap-2">
+                      {COLOR_SWATCHES.map(sw => (
+                        <button
+                          key={sw.name}
+                          onClick={() => onUpdateCompanion({ accentColor: sw.hex })}
+                          className={`w-5 h-5 rounded border transition-transform ${
+                            companion.accentColor === sw.hex ? 'scale-110 border-white ring-2 ring-white/50' : isDark ? 'border-neutral-700' : 'border-neutral-400'
+                          }`}
+                          style={{ backgroundColor: sw.hex }}
+                          title={sw.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        </section>
-      )}
+        )}
+      </section>
+
+      {/* SECTION 3: Custom Messages & Cognitive Nudges */}
+      <section className={`flex flex-col rounded-lg border p-4 sm:p-5 space-y-3 ${
+        isDark
+          ? 'bg-neutral-900 border-neutral-700'
+          : 'bg-neutral-50 border-neutral-300'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MessageSquare className={`w-4 h-4 ${
+              isDark ? 'text-white' : 'text-neutral-900'
+            }`} />
+            <span className={`font-bold text-base ${
+              isDark ? 'text-white' : 'text-neutral-900'
+            }`}>Companion Prompts & Nudges</span>
+          </div>
+          <button
+            onClick={() => onUpdateCompanion({ messagesEnabled: !companion.messagesEnabled })}
+            className={`w-10 h-5 rounded-full p-0.5 transition-colors border ${
+              companion.messagesEnabled
+                ? isDark ? 'bg-white border-white' : 'bg-neutral-900 border-neutral-900'
+                : isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-neutral-300 border-neutral-300'
+            }`}
+          >
+            <div
+              className={`w-4 h-4 rounded-full transition-transform ${
+                companion.messagesEnabled
+                  ? isDark ? 'translate-x-5 bg-black' : 'translate-x-5 bg-white'
+                  : isDark ? 'translate-x-0 bg-neutral-400' : 'translate-x-0 bg-neutral-500'
+              }`}
+            />
+          </button>
+        </div>
+
+        {companion.messagesEnabled && (
+          <div className="space-y-2.5">
+            {/* Message Slot 1 */}
+            <div className="space-y-1">
+              <span className={`text-[11px] font-mono ${
+                isDark ? 'text-neutral-400' : 'text-neutral-600'
+              }`}>SLOT 01 - Circadian Care</span>
+              <input
+                type="text"
+                value={msg1}
+                onChange={e => setMsg1(e.target.value)}
+                className={`w-full text-xs font-semibold px-3 py-2 rounded border focus:outline-none ${
+                  isDark
+                    ? 'bg-black text-white border-neutral-700 focus:border-white'
+                    : 'bg-white text-neutral-900 border-neutral-300 focus:border-neutral-600'
+                } font-mono`}
+              />
+            </div>
+
+            {/* Message Slot 2 */}
+            <div className="space-y-1">
+              <span className={`text-[11px] font-mono ${
+                isDark ? 'text-neutral-400' : 'text-neutral-600'
+              }`}>SLOT 02 - Context Switch Zero</span>
+              <input
+                type="text"
+                value={msg2}
+                onChange={e => setMsg2(e.target.value)}
+                className={`w-full text-xs font-semibold px-3 py-2 rounded border focus:outline-none ${
+                  isDark
+                    ? 'bg-black text-white border-neutral-700 focus:border-white'
+                    : 'bg-white text-neutral-900 border-neutral-300 focus:border-neutral-600'
+                } font-mono`}
+              />
+            </div>
+
+            {/* Message Slot 3 */}
+            <div className="space-y-1">
+              <span className={`text-[11px] font-mono ${
+                isDark ? 'text-neutral-400' : 'text-neutral-600'
+              }`}>SLOT 03 - Milestone Status</span>
+              <input
+                type="text"
+                value={msg3}
+                onChange={e => setMsg3(e.target.value)}
+                className={`w-full text-xs font-semibold px-3 py-2 rounded border focus:outline-none ${
+                  isDark
+                    ? 'bg-black text-white border-neutral-700 focus:border-white'
+                    : 'bg-white text-neutral-900 border-neutral-300 focus:border-neutral-600'
+                } font-mono`}
+              />
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* SECTION 4: Security & Biometrics */}
+      <section className={`flex flex-col rounded-lg border p-4 sm:p-5 space-y-3 ${
+        isDark
+          ? 'bg-neutral-900 border-neutral-700'
+          : 'bg-neutral-50 border-neutral-300'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Fingerprint className={`w-4 h-4 ${
+              isDark ? 'text-white' : 'text-neutral-900'
+            }`} />
+            <span className={`font-bold text-base ${
+              isDark ? 'text-white' : 'text-neutral-900'
+            }`}>Security & Authentication</span>
+          </div>
+          <span className={`text-[10px] px-2 py-0.5 rounded border font-mono ${
+            isDark
+              ? 'bg-black text-neutral-300 border-neutral-800'
+              : 'bg-neutral-200 text-neutral-700 border-neutral-300'
+          }`}>
+            LOCAL-SECURE
+          </span>
+        </div>
+
+        {/* 15-min idle guard */}
+        <div className={`flex items-center justify-between p-2.5 rounded border ${
+          isDark
+            ? 'bg-black border-neutral-800'
+            : 'bg-neutral-100 border-neutral-300'
+        }`}>
+          <div>
+            <span className={`font-semibold text-xs block ${
+              isDark ? 'text-white' : 'text-neutral-900'
+            }`}>
+              15-Min Background Idle Guard
+            </span>
+            <span className={`text-[10px] ${
+              isDark ? 'text-neutral-400' : 'text-neutral-600'
+            }`}>
+              Enforce passkey check upon inactivity
+            </span>
+          </div>
+          <button
+            onClick={() => onUpdateSettings({ biometricsEnabled: !settings.biometricsEnabled })}
+            className={`w-10 h-5 rounded-full p-0.5 transition-colors border ${
+              settings.biometricsEnabled
+                ? isDark ? 'bg-white border-white' : 'bg-neutral-900 border-neutral-900'
+                : isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-neutral-300 border-neutral-300'
+            }`}
+          >
+            <div
+              className={`w-4 h-4 rounded-full transition-transform ${
+                settings.biometricsEnabled
+                  ? isDark ? 'translate-x-5 bg-black' : 'translate-x-5 bg-white'
+                  : isDark ? 'translate-x-0 bg-neutral-400' : 'translate-x-0 bg-neutral-500'
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Workspace Handle (8 / 16 limit) */}
+        <div className={`space-y-1 pt-1 font-mono ${
+          isDark ? '' : 'text-neutral-900'
+        }`}>
+          <div className={`flex justify-between text-xs ${
+            isDark ? 'text-neutral-400' : 'text-neutral-600'
+          }`}>
+            <span>Workspace User Identifier</span>
+            <span className={`tabular-nums ${
+              isDark ? 'text-neutral-300' : 'text-neutral-700'
+            }`}>{handleInput.length} / 16</span>
+          </div>
+          <div className="relative">
+            <input
+              type="text"
+              maxLength={16}
+              value={handleInput}
+              onChange={e => setHandleInput(e.target.value)}
+              className={`w-full text-sm font-semibold px-3 py-2 rounded border focus:outline-none focus:border-white ${
+                isDark
+                  ? 'bg-black text-white border-neutral-700'
+                  : 'bg-white text-neutral-900 border-neutral-300'
+              }`}
+            />
+            <CheckCircle2 className={`w-4 h-4 absolute right-3 top-2.5 ${
+              isDark ? 'text-neutral-400' : 'text-neutral-500'
+            }`} />
+          </div>
+        </div>
+      </section>
+
+      {/* ACTION FOOTER DOCK */}
+      <div className="flex items-center gap-2 pt-1 font-mono">
+        <button
+          onClick={handleApply}
+          disabled={isApplying}
+          className={`flex-1 py-2.5 px-4 rounded font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all ${
+            isDark
+              ? 'bg-white text-black hover:bg-neutral-200'
+              : 'bg-neutral-900 text-white hover:bg-neutral-800'
+          }`}
+        >
+          <Save className="w-4 h-4" />
+          <span>{isApplying ? 'SAVING SPEC...' : 'SAVE COMPANION CONFIGURATION'}</span>
+        </button>
+
+        <button
+          onClick={handleReset}
+          title="Reset to Factory Defaults"
+          className={`p-2.5 rounded text-xs font-bold flex items-center gap-1 active:scale-95 transition-all border ${
+            isDark
+              ? 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:text-white hover:bg-neutral-700'
+              : 'bg-neutral-200 border-neutral-300 text-neutral-700 hover:text-neutral-900 hover:bg-neutral-300'
+          }`}
+        >
+          <RotateCcw className="w-4 h-4" />
+          <span className="hidden sm:inline">RESET</span>
+        </button>
+      </div>
     </div>
   );
-};
+});

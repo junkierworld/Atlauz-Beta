@@ -15,8 +15,6 @@ import {
   Heart,
   Maximize2,
   ChevronDown,
-  ChevronUp,
-  ChevronRight,
   Check,
   CheckSquare,
   Square,
@@ -31,19 +29,13 @@ import {
   Tag,
   Clock,
   Sparkles,
-  ArrowRight,
-  Film,
-  Folder,
-  SlidersHorizontal,
-  Layers,
-  ArrowLeft
+  ArrowRight
 } from 'lucide-react';
-import { ResourceItem, ResourceType, UserRole, LibraryTaskItem, LibraryShelvingMode, RoleShelfType } from '../types';
+import { ResourceItem, ResourceType, UserRole, LibraryTaskItem } from '../types';
 import { BadgeSelector } from './BadgeSelector';
 import { SkeletonLoader } from './SkeletonLoader';
 import { AVAILABLE_BADGES, initialLibraryTasks } from '../data';
 import { isLightBackground, getAdaptiveTextColor, getAdaptiveSubtextColor } from '../utils/contrast';
-import { FULLER_SHELF_COLORS, FULLER_RESOURCE_CATEGORY_COLORS } from '../themes';
 
 interface LibraryViewProps {
   resources: ResourceItem[];
@@ -54,14 +46,9 @@ interface LibraryViewProps {
   onUpdateBadge: (resourceId: string, badge: string) => void;
   onUpdateCoverColor: (resourceId: string, color: string) => void;
   onUpdateResource?: (resourceId: string, updated: Partial<ResourceItem>) => void;
-  onDeleteResource?: (resourceId: string) => void;
   onShowToast: (msg: string | { message: string; type?: 'info' | 'success' | 'warning' | 'error'; onUndo?: () => void; undoLabel?: string }) => void;
   userRole?: UserRole;
-  libraryShelvingMode?: LibraryShelvingMode;
-  onUpdateShelvingMode?: (mode: LibraryShelvingMode) => void;
-  onOpenCurricularPortal?: () => void;
-  enrolledPathsCount?: number;
-  earnedCertificatesCount?: number;
+  settings?: { theme?: 'light' | 'dark' };
 }
 
 const PRESET_COLORS = [
@@ -75,20 +62,7 @@ const PRESET_COLORS = [
   { name: 'Deep Carbon (10%)', color: '#1a1a1a' }
 ];
 
-export type ShelfSortOption = 'default' | 'tags' | 'a-z' | 'pinned' | 'starred';
-
-interface ShelfDefinition {
-  id: string;
-  name: string;
-  categoryKey: string;
-  icon: any;
-  iconName: string;
-  description: string;
-  items: ResourceItem[];
-  tags: string[];
-}
-
-export const LibraryView: React.FC<LibraryViewProps> = ({
+export const LibraryView = React.memo(function LibraryViewComponent({
   resources,
   onOpenResource,
   onCreateResourceClick,
@@ -97,25 +71,17 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   onUpdateBadge,
   onUpdateCoverColor,
   onUpdateResource,
-  onDeleteResource,
   onShowToast,
   userRole = 'Student',
-  libraryShelvingMode = 'hybrid',
-  onUpdateShelvingMode,
-  onOpenCurricularPortal,
-  enrolledPathsCount = 0,
-  earnedCertificatesCount = 0
-}) => {
-  const [activeViewTab, setActiveViewTab] = useState<'shelves' | 'notepad_tasks'>('shelves');
-  const [shelvingMode, setShelvingMode] = useState<LibraryShelvingMode>(libraryShelvingMode);
+  settings = { theme: 'dark' }
+}: LibraryViewProps) {
+  const isDark = settings.theme === 'dark';
+  const [activeViewTab, setActiveViewTab] = useState<'bookshelf' | 'notepad_tasks'>('bookshelf');
+  const [activeTypeFilter, setActiveTypeFilter] = useState<string>('all');
+  const [isShelfLoading, setIsShelfLoading] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [inShelfSearchQuery, setInShelfSearchQuery] = useState<string>('');
   const [activeColorPickerId, setActiveColorPickerId] = useState<string | null>(null);
-  const [deletingResource, setDeletingResource] = useState<ResourceItem | null>(null);
-
-  // Active Focused Shelf: null means main hub, string shelfId means full-screen dark focus mode
-  const [activeFocusShelfId, setActiveFocusShelfId] = useState<string | null>(null);
-  const [shelfSort, setShelfSort] = useState<ShelfSortOption>('default');
+  const [activeBadgePickerId, setActiveBadgePickerId] = useState<string | null>(null);
 
   // Dedicated in-bounds Volume Content & Color Editor
   const [editingResource, setEditingResource] = useState<ResourceItem | null>(null);
@@ -125,12 +91,12 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   const [editTags, setEditTags] = useState('');
   const [editColor, setEditColor] = useState('#ffffff');
   const [editBadge, setEditBadge] = useState('');
-  const [editRoleShelf, setEditRoleShelf] = useState<RoleShelfType>('personal');
   const [editIsPinned, setEditIsPinned] = useState(false);
   const [editIsFavorite, setEditIsFavorite] = useState(false);
 
   // Notepad / Todo Section States
   const [tasks, setTasks] = useState<LibraryTaskItem[]>(initialLibraryTasks as LibraryTaskItem[]);
+  const [taskFilter, setTaskFilter] = useState<'all' | 'pending' | 'completed' | 'role'>('all');
   const [newTaskText, setNewTaskText] = useState('');
   const [newTaskCategory, setNewTaskCategory] = useState('Research');
   const [newTaskPriority, setNewTaskPriority] = useState<'high' | 'medium' | 'normal'>('medium');
@@ -149,10 +115,10 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
     setEditTags(res.tags.join(', '));
     setEditColor(res.coverColor || '#ffffff');
     setEditBadge(res.badge || '★ Favorite');
-    setEditRoleShelf(res.roleShelf || (res.type === 'document' || res.type === 'pdf' ? 'researcher' : res.type === 'presentation' ? 'educator' : res.type === 'lesson' || res.type === 'ebook' ? 'academic' : 'personal'));
     setEditIsPinned(res.isPinned);
     setEditIsFavorite(res.isFavorite);
     setActiveColorPickerId(null);
+    setActiveBadgePickerId(null);
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
@@ -173,12 +139,12 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         tags: updatedTags,
         coverColor: editColor,
         badge: editBadge,
-        roleShelf: editRoleShelf,
         isPinned: editIsPinned,
         isFavorite: editIsFavorite
       });
     }
 
+    // Also trigger individual updaters if present
     if (editColor !== editingResource.coverColor) {
       onUpdateCoverColor(editingResource.id, editColor);
     }
@@ -192,1188 +158,1097 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       onToggleFavorite(editingResource.id);
     }
 
-    onShowToast(`Updated volume "${editTitle.trim()}"`);
+    onShowToast(`Saved changes for "${editTitle.trim()}"`);
     setEditingResource(null);
   };
 
-  const handleShelvingModeChange = (mode: LibraryShelvingMode) => {
-    setShelvingMode(mode);
-    if (onUpdateShelvingMode) {
-      onUpdateShelvingMode(mode);
+  const getIconForType = (type: ResourceType) => {
+    switch (type) {
+      case 'notebook': return BookOpen;
+      case 'document': return FileText;
+      case 'presentation': return Presentation;
+      case 'ebook': return Book;
+      case 'lesson': return GraduationCap;
+      case 'notepad': return FileCode;
+      case 'journal': return Heart;
+      case 'pdf': return FileText;
+      default: return BookOpen;
     }
-    onShowToast(`Shelving system set to ${mode === 'role_owned' ? 'Role-Owned Shelves' : mode === 'categories' ? 'Subject Categories' : 'Hybrid Mode'}`);
   };
 
-  // Group resources into shelves based on active shelvingMode (Categories vs Role-Owned vs Hybrid)
-  const shelvesData: ShelfDefinition[] = useMemo(() => {
-    const shelfMap: Record<string, ShelfDefinition> = {};
-
-    if (shelvingMode === 'role_owned') {
-      // 4 Role-Owned Shelves
-      const roleShelves: Array<{ key: string; name: string; desc: string; icon: any; iconName: string; matcher: (r: ResourceItem) => boolean }> = [
-        {
-          key: 'personal',
-          name: '📁 Personal Shelf',
-          desc: 'Personal journals, reflective study logs, and instant scratchpads',
-          icon: Heart,
-          iconName: 'Heart',
-          matcher: r => (r.roleShelf === 'personal' || (!r.roleShelf && (r.type === 'journal' || r.type === 'notepad')))
-        },
-        {
-          key: 'academic',
-          name: '🎓 Academic & Student Shelf',
-          desc: 'Enrolled coursework, lesson syllabi, and reference textbooks',
-          icon: GraduationCap,
-          iconName: 'GraduationCap',
-          matcher: r => (r.roleShelf === 'academic' || (!r.roleShelf && (r.type === 'lesson' || r.type === 'ebook' || r.type === 'notebook')))
-        },
-        {
-          key: 'researcher',
-          name: '🔬 Researcher Shelf',
-          desc: 'Thesis manuscripts, whitepapers, annotated PDFs, and lab notes',
-          icon: Folder,
-          iconName: 'Folder',
-          matcher: r => (r.roleShelf === 'researcher' || (!r.roleShelf && (r.type === 'document' || r.type === 'pdf')))
-        },
-        {
-          key: 'educator',
-          name: '🏛️ Educator Shelf',
-          desc: 'Keynote presentation decks, cohort slide templates, and rubrics',
-          icon: Film,
-          iconName: 'Film',
-          matcher: r => (r.roleShelf === 'educator' || (!r.roleShelf && r.type === 'presentation'))
-        }
-      ];
-
-      roleShelves.forEach(rs => {
-        shelfMap[rs.name] = {
-          id: `shelf-${rs.key}`,
-          name: rs.name,
-          categoryKey: rs.name,
-          icon: rs.icon,
-          iconName: rs.iconName,
-          description: rs.desc,
-          items: [],
-          tags: []
-        };
-      });
-
-      resources.forEach(res => {
-        const matched = roleShelves.find(rs => rs.matcher(res)) || roleShelves[0];
-        shelfMap[matched.name].items.push(res);
-        res.tags.forEach(t => {
-          if (!shelfMap[matched.name].tags.includes(t)) {
-            shelfMap[matched.name].tags.push(t);
-          }
-        });
-      });
-
-      return Object.values(shelfMap);
-    }
-
-    if (shelvingMode === 'hybrid') {
-      // Hybrid: Role-Owned Shelves as primary groupings with category breakdowns
-      const hybridShelves: Array<{ key: string; name: string; desc: string; icon: any; iconName: string; matcher: (r: ResourceItem) => boolean }> = [
-        {
-          key: 'personal-hybrid',
-          name: '📁 Personal Shelf (Journals & Scratchpads)',
-          desc: 'Private journals, reflection notes, and unstructured drafts',
-          icon: Heart,
-          iconName: 'Heart',
-          matcher: r => (r.roleShelf === 'personal' || (!r.roleShelf && (r.type === 'journal' || r.type === 'notepad')))
-        },
-        {
-          key: 'academic-hybrid',
-          name: '🎓 Academic Shelf (Courses & Lessons)',
-          desc: 'Course curriculum modules, textbooks, and field notebooks',
-          icon: GraduationCap,
-          iconName: 'GraduationCap',
-          matcher: r => (r.roleShelf === 'academic' || (!r.roleShelf && (r.type === 'lesson' || r.type === 'ebook' || r.type === 'notebook')))
-        },
-        {
-          key: 'researcher-hybrid',
-          name: '🔬 Researcher Shelf (Papers & Whitepapers)',
-          desc: 'Empirical research drafts, annotated PDFs, and citation matrices',
-          icon: Folder,
-          iconName: 'Folder',
-          matcher: r => (r.roleShelf === 'researcher' || (!r.roleShelf && (r.type === 'document' || r.type === 'pdf')))
-        },
-        {
-          key: 'educator-hybrid',
-          name: '🏛️ Educator Shelf (Slides & Decks)',
-          desc: 'Curriculum decks, 16:9 presentation slides, and cohort rubrics',
-          icon: Film,
-          iconName: 'Film',
-          matcher: r => (r.roleShelf === 'educator' || (!r.roleShelf && r.type === 'presentation'))
-        }
-      ];
-
-      hybridShelves.forEach(hs => {
-        shelfMap[hs.name] = {
-          id: `shelf-${hs.key}`,
-          name: hs.name,
-          categoryKey: hs.name,
-          icon: hs.icon,
-          iconName: hs.iconName,
-          description: hs.desc,
-          items: [],
-          tags: []
-        };
-      });
-
-      resources.forEach(res => {
-        const matched = hybridShelves.find(hs => hs.matcher(res)) || hybridShelves[0];
-        shelfMap[matched.name].items.push(res);
-        res.tags.forEach(t => {
-          if (!shelfMap[matched.name].tags.includes(t)) {
-            shelfMap[matched.name].tags.push(t);
-          }
-        });
-      });
-
-      return Object.values(shelfMap);
-    }
-
-    // Default 'categories' mode (by MIME & Subject categories)
-    resources.forEach(res => {
-      let shelfKey = 'General Research';
-      let icon = Folder;
-      let iconName = 'Folder';
-      let desc = 'General study assets and notes';
-
-      if (res.type === 'presentation') {
-        shelfKey = 'Interactive Slides & Decks';
-        icon = Film;
-        iconName = 'Film';
-        desc = 'Keynote slides, visual presentations, and pitch decks';
-      } else if (res.type === 'document' || res.type === 'pdf') {
-        shelfKey = 'Research Papers & Documents';
-        icon = Folder;
-        iconName = 'Folder';
-        desc = 'Thesis drafts, Google Docs, and annotated whitepapers';
-      } else if (res.type === 'notebook') {
-        shelfKey = 'Laboratory Field Notebooks';
-        icon = Book;
-        iconName = 'Book';
-        desc = 'Multi-page experimental laboratory notebooks with formulas';
-      } else if (res.type === 'ebook') {
-        shelfKey = 'Core Academic Reference Books';
-        icon = BookOpen;
-        iconName = 'BookOpen';
-        desc = 'Comprehensive textbooks, chapters, and academic monographs';
-      } else if (res.type === 'lesson') {
-        shelfKey = 'Course Curriculum & Lessons';
-        icon = GraduationCap;
-        iconName = 'GraduationCap';
-        desc = 'Structured course modules, checkpoints, and syllabus flashcards';
-      } else if (res.type === 'journal') {
-        shelfKey = 'Mindful Journals & Daily Logs';
-        icon = Heart;
-        iconName = 'Heart';
-        desc = 'Mindful study reflections, mood logs, and personal insights';
-      } else if (res.type === 'notepad') {
-        shelfKey = 'Quick Scratchpads & Drafts';
-        icon = FileText;
-        iconName = 'FileText';
-        desc = 'Instant capture scratchpads and idea dumps';
-      }
-
-      if (!shelfMap[shelfKey]) {
-        shelfMap[shelfKey] = {
-          id: `shelf-${shelfKey.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-          name: shelfKey,
-          categoryKey: shelfKey,
-          icon,
-          iconName,
-          description: desc,
-          items: [],
-          tags: []
-        };
-      }
-
-      shelfMap[shelfKey].items.push(res);
-      res.tags.forEach(t => {
-        if (!shelfMap[shelfKey].tags.includes(t)) {
-          shelfMap[shelfKey].tags.push(t);
-        }
-      });
-    });
-
-    return Object.values(shelfMap);
-  }, [resources, shelvingMode]);
-
-  const activeFocusShelf = useMemo(() => {
-    if (!activeFocusShelfId) return null;
-    return shelvesData.find(s => s.id === activeFocusShelfId) || null;
-  }, [activeFocusShelfId, shelvesData]);
-
-  // Processed items inside the focused shelf
-  const focusedShelfItems = useMemo(() => {
-    if (!activeFocusShelf) return [];
-    let list = [...activeFocusShelf.items];
-
-    if (inShelfSearchQuery.trim()) {
-      const q = inShelfSearchQuery.toLowerCase();
-      list = list.filter(
-        r =>
-          r.title.toLowerCase().includes(q) ||
-          r.category.toLowerCase().includes(q) ||
-          r.tags.some(t => t.toLowerCase().includes(q)) ||
-          r.description.toLowerCase().includes(q)
-      );
-    }
-
-    if (shelfSort === 'a-z') {
-      list.sort((a, b) => a.title.localeCompare(b.title));
-    } else if (shelfSort === 'pinned') {
-      list.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
-    } else if (shelfSort === 'starred') {
-      list.sort((a, b) => (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0));
-    } else if (shelfSort === 'tags') {
-      list.sort((a, b) => (b.tags[0] || '').localeCompare(a.tags[0] || ''));
-    }
-
-    return list;
-  }, [activeFocusShelf, inShelfSearchQuery, shelfSort]);
-
-  // Helper to render distinct item physical visual representations
-  const renderPhysicalCover = (book: ResourceItem) => {
-    const isNotebook = book.type === 'notebook';
-    const isJournal = book.type === 'journal';
-    const isSlides = book.type === 'presentation';
-    const isFolderDoc = book.type === 'document' || book.type === 'pdf';
-    const isCourse = book.type === 'ebook';
-    const isLesson = book.type === 'lesson';
-
-    const categoryTheme = FULLER_RESOURCE_CATEGORY_COLORS[book.type];
-
-    let computedCover = book.coverColor || (categoryTheme ? categoryTheme.bg : '#1a1a1a');
-    if (isCourse && !book.coverColor) {
-      computedCover = categoryTheme ? categoryTheme.bg : '#171717';
-    } else if (isLesson && !book.coverColor) {
-      computedCover = categoryTheme ? categoryTheme.bg : '#f0f0f0';
-    } else if (isNotebook && !book.coverColor) {
-      computedCover = categoryTheme ? categoryTheme.bg : '#1c1c1c';
-    } else if (isJournal && !book.coverColor) {
-      computedCover = categoryTheme ? categoryTheme.bg : '#e8e8e8';
-    } else if (isSlides && !book.coverColor) {
-      computedCover = categoryTheme ? categoryTheme.bg : '#262626';
-    } else if (isFolderDoc && !book.coverColor) {
-      computedCover = categoryTheme ? categoryTheme.bg : '#2a2a2a';
-    }
-
-    const isLight = isLightBackground(computedCover);
-    const textColor = getAdaptiveTextColor(computedCover);
-    const subtextColor = getAdaptiveSubtextColor(computedCover);
-
-    return (
-      <div
-        onClick={() => onOpenResource(book)}
-        style={{
-          backgroundColor: computedCover,
-          borderColor: categoryTheme ? categoryTheme.border : (isLight ? '#cbd5e1' : '#404040'),
-          boxShadow: isLight
-            ? '0 12px 28px -6px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(0,0,0,0.15)'
-            : '0 12px 28px -6px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(255,255,255,0.15)'
-        }}
-        className="w-full aspect-[3/4] max-h-[220px] rounded-xl p-3 sm:p-4 flex flex-col justify-between cursor-pointer border-2 relative overflow-hidden transition-all duration-200 group-hover:scale-[1.02]"
-      >
-        {/* SPECIFIC VISUAL STYLES */}
-
-        {/* 1. NOTEBOOK (Darker Shade + Spiral Rings on Left) */}
-        {isNotebook && (
-          <div className="absolute top-0 bottom-0 left-0 w-4 bg-black/60 border-r border-white/20 flex flex-col justify-around py-3 items-center z-20">
-            {Array.from({ length: 7 }).map((_, rIdx) => (
-              <div
-                key={rIdx}
-                className="w-3 h-2 rounded-full border border-neutral-400 bg-neutral-800 shadow-sm -ml-1"
-                title="Notebook Spiral Ring"
-              />
-            ))}
-          </div>
-        )}
-
-        {/* 2. JOURNAL (Lighter Shade + Spiral Rings on Left) */}
-        {isJournal && (
-          <div className="absolute top-0 bottom-0 left-0 w-4 bg-neutral-300/80 border-r border-neutral-400/50 flex flex-col justify-around py-3 items-center z-20">
-            {Array.from({ length: 7 }).map((_, rIdx) => (
-              <div
-                key={rIdx}
-                className="w-3 h-2 rounded-full border border-neutral-500 bg-neutral-200 shadow-sm -ml-1"
-                title="Journal Spiral Ring"
-              />
-            ))}
-          </div>
-        )}
-
-        {/* 3. GOOGLE SLIDES (Film Strip Perforations Top & Bottom) */}
-        {isSlides && (
-          <>
-            <div className="absolute top-0 inset-x-0 h-3 bg-black/80 flex items-center justify-around px-1 z-20 border-b border-neutral-700">
-              {Array.from({ length: 6 }).map((_, fIdx) => (
-                <span key={fIdx} className="w-2 h-1.5 rounded-[1px] bg-neutral-400 inline-block" />
-              ))}
-            </div>
-            <div className="absolute bottom-0 inset-x-0 h-3 bg-black/80 flex items-center justify-around px-1 z-20 border-t border-neutral-700">
-              {Array.from({ length: 6 }).map((_, fIdx) => (
-                <span key={fIdx} className="w-2 h-1.5 rounded-[1px] bg-neutral-400 inline-block" />
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* 4. DOCS / PDF (Folder Tab on Top Left) */}
-        {isFolderDoc && (
-          <div className="absolute top-0 left-0 right-12 h-3.5 bg-neutral-700/80 rounded-tr-lg border-b border-r border-neutral-600 flex items-center px-2 z-20">
-            <span className="text-[8px] font-mono font-bold text-neutral-300 uppercase truncate">
-              {book.type === 'pdf' ? 'PDF ARCHIVE' : 'DOC FOLDER'}
-            </span>
-          </div>
-        )}
-
-        {/* 5. COURSE (Darker Book Spine on Left) */}
-        {isCourse && (
-          <div className="absolute top-0 bottom-0 left-0 w-3.5 bg-black/70 border-r border-white/10 z-10 flex flex-col justify-center items-center">
-            <span className="text-[7px] font-mono text-neutral-500 uppercase tracking-widest [writing-mode:vertical-lr] rotate-180">
-              COURSE HARDCOVER
-            </span>
-          </div>
-        )}
-
-        {/* 6. LESSON (Lighter Book Spine on Left) */}
-        {isLesson && (
-          <div className="absolute top-0 bottom-0 left-0 w-3.5 bg-neutral-300 border-r border-neutral-400 z-10 flex flex-col justify-center items-center">
-            <span className="text-[7px] font-mono text-neutral-700 uppercase tracking-widest [writing-mode:vertical-lr] rotate-180 font-bold">
-              LESSON
-            </span>
-          </div>
-        )}
-
-        {/* Header Badges Strip */}
-        <div className={`flex items-start justify-between z-10 ${isNotebook || isJournal || isCourse || isLesson ? 'pl-3' : ''} ${isSlides ? 'pt-2' : ''} ${isFolderDoc ? 'pt-2' : ''}`}>
-          <div className="flex items-center gap-1.5">
-            <div
-              className={`p-1 rounded ${
-                isLight ? 'bg-black/10 text-black' : 'bg-white/10 text-white'
-              }`}
-            >
-              {isSlides ? (
-                <Film className="w-3.5 h-3.5" />
-              ) : isFolderDoc ? (
-                <Folder className="w-3.5 h-3.5" />
-              ) : isNotebook ? (
-                <Book className="w-3.5 h-3.5" />
-              ) : isJournal ? (
-                <Heart className="w-3.5 h-3.5" />
-              ) : isLesson ? (
-                <GraduationCap className="w-3.5 h-3.5" />
-              ) : (
-                <BookOpen className="w-3.5 h-3.5" />
-              )}
-            </div>
-
-            <span
-              style={{ color: textColor }}
-              className="text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-black/20"
-            >
-              {isSlides ? 'Slides' : isFolderDoc ? (book.type === 'pdf' ? 'PDF' : 'Doc') : isCourse ? 'Course' : isLesson ? 'Lesson' : isNotebook ? 'Notebook' : isJournal ? 'Journal' : book.type}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1">
-            {book.isPinned && (
-              <span className={`p-1 rounded ${isLight ? 'bg-black/10 text-black' : 'bg-white/10 text-white'}`}>
-                <Pin className="w-3 h-3 fill-current" />
-              </span>
-            )}
-            {book.isFavorite && (
-              <span className={`p-1 rounded ${isLight ? 'bg-black/10 text-black' : 'bg-white/10 text-white'}`}>
-                <Star className="w-3 h-3 fill-current" />
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Volume Title & Category */}
-        <div className={`space-y-1 z-10 my-auto ${isNotebook || isJournal || isCourse || isLesson ? 'pl-3' : ''}`}>
-          <h4
-            style={{ color: textColor }}
-            className="font-bold text-xs sm:text-sm leading-snug line-clamp-3 font-mono tracking-tight"
-          >
-            {book.title}
-          </h4>
-          <span
-            style={{ color: subtextColor }}
-            className="text-[10px] font-mono block truncate opacity-85"
-          >
-            {book.category}
-          </span>
-        </div>
-
-        {/* Footer Meta */}
-        <div className={`flex items-center justify-between z-10 pt-1 border-t text-[9px] font-mono ${
-          isLight ? 'border-black/15' : 'border-white/15'
-        } ${isNotebook || isJournal || isCourse || isLesson ? 'pl-3' : ''} ${isSlides ? 'pb-2' : ''}`}>
-          <span style={{ color: subtextColor }}>
-            {book.tags[0] ? `#${book.tags[0]}` : book.type}
-          </span>
-          <span
-            style={{ color: textColor }}
-            className="font-bold uppercase tracking-wider group-hover:underline"
-          >
-            Open →
-          </span>
-        </div>
-      </div>
+  // Todo operations
+  const handleToggleTask = (id: string) => {
+    setTasks(prev =>
+      prev.map(t => (t.id === id ? { ...t, completed: !t.completed } : t))
     );
   };
 
+  const handleAddTask = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskText.trim()) return;
+
+    const newTask: LibraryTaskItem = {
+      id: `task-${Date.now()}`,
+      text: newTaskText.trim(),
+      completed: false,
+      category: newTaskCategory,
+      priority: newTaskPriority,
+      roleTag: userRole,
+      dueDate: 'Today'
+    };
+
+    setTasks(prev => [newTask, ...prev]);
+    setNewTaskText('');
+    onShowToast('Task registered in Library matrix');
+  };
+
+  const handleDeleteTask = (id: string) => {
+    const targetTask = tasks.find(t => t.id === id);
+    if (!targetTask) return;
+    setTasks(prev => prev.filter(t => t.id !== id));
+    onShowToast({
+      message: `Task removed: "${targetTask.text}"`,
+      onUndo: () => {
+        setTasks(prev => [targetTask, ...prev]);
+      },
+      undoLabel: 'Undo'
+    });
+  };
+
+  const handleCopyNotes = () => {
+    navigator.clipboard?.writeText(notepadContent);
+    onShowToast('Scratchpad notes copied to clipboard');
+  };
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(t => {
+      if (taskFilter === 'pending') return !t.completed;
+      if (taskFilter === 'completed') return t.completed;
+      if (taskFilter === 'role') return t.roleTag === userRole;
+      return true;
+    });
+  }, [tasks, taskFilter, userRole]);
+
+  const completedCount = useMemo(() => tasks.filter(t => t.completed).length, [tasks]);
+  const taskProgress = useMemo(
+    () => (tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0),
+    [tasks.length, completedCount]
+  );
+
+  const filteredResources = useMemo(() => {
+    return resources.filter(res => {
+      if (activeTypeFilter === 'pinned' && !res.isPinned) return false;
+      if (activeTypeFilter === 'favorites' && !res.isFavorite) return false;
+      if (activeTypeFilter !== 'all' && activeTypeFilter !== 'pinned' && activeTypeFilter !== 'favorites') {
+        if (res.type !== activeTypeFilter) return false;
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchTitle = res.title.toLowerCase().includes(q);
+        const matchCategory = res.category.toLowerCase().includes(q);
+        const matchTags = res.tags.some(t => t.toLowerCase().includes(q));
+        const matchType = res.type.toLowerCase().includes(q);
+        const matchDescription = res.description?.toLowerCase().includes(q);
+        if (!matchTitle && !matchCategory && !matchTags && !matchType && !matchDescription) return false;
+      }
+      return true;
+    });
+  }, [resources, activeTypeFilter, searchQuery]);
+
   return (
-    <div className="space-y-6 font-sans select-none animate-fade-in pb-12">
-      {/* Top Banner with Navigation Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-neutral-900 border border-neutral-800 rounded-xl">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-black border border-neutral-700 flex items-center justify-center text-white shrink-0">
-            <BookOpen className="w-5 h-5 text-neutral-300" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-mono text-sm sm:text-base font-bold text-white uppercase tracking-tight">
-                Academic Shelves Hub
-              </h1>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700 font-bold">
-                {shelvesData.length} Shelves • {resources.length} Volumes
-              </span>
+    <div className="flex flex-col w-full max-w-5xl mx-auto space-y-6 animate-fade-in pb-20 font-sans select-none">
+      {/* Top Banner: Customized Library Bookshelf & Mode Selector */}
+      <div className={`rounded-lg border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-sans ${
+        isDark
+          ? 'bg-neutral-900 border-neutral-800'
+          : 'bg-neutral-50 border-neutral-300'
+      }`}>
+        <div>
+          <div className="flex items-center gap-2.5">
+            <span className={`p-2 rounded border ${
+              isDark
+                ? 'bg-neutral-800 text-white border-neutral-700'
+                : 'bg-neutral-200 text-neutral-900 border-neutral-400'
+            }`}>
+              <BookOpen className="w-5 h-5" />
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className={`text-lg font-bold tracking-tight font-mono ${
+                  isDark ? 'text-white' : 'text-neutral-900'
+                }`}>
+                  Library Bookshelf & Task Matrix
+                </h1>
+                <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded border font-bold uppercase ${
+                  isDark
+                    ? 'bg-neutral-800 text-neutral-300 border-neutral-700'
+                    : 'bg-neutral-200 text-neutral-700 border-neutral-400'
+                }`}>
+                  PROTOTYPE
+                </span>
+                <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded border uppercase ${
+                  isDark
+                    ? 'bg-neutral-800 text-neutral-400 border-neutral-700'
+                    : 'bg-neutral-200 text-neutral-600 border-neutral-400'
+                }`}>
+                  {userRole}
+                </span>
+              </div>
+              <p className={`text-xs mt-0.5 ${
+                isDark ? 'text-neutral-400' : 'text-neutral-600'
+              }`}>
+                Tactile book volumes, reading scratchpad notes, and role-aligned research checklists with adaptive font contrast.
+              </p>
             </div>
-            <p className="text-xs text-neutral-400">
-              Select any shelf shortcut to enter full-screen dark focus mode
-            </p>
           </div>
         </div>
 
-        {/* Top View Toggle: Shelves vs Notepad/Tasks */}
-        <div
-          role="tablist"
-          aria-label="Library sub views"
-          className="flex items-center bg-black p-1 rounded-lg border border-neutral-800 text-xs font-mono"
-        >
+        {/* View Switcher Tabs: Bookshelf vs Notepad/Todo */}
+        <div className={`flex items-center gap-1.5 p-1 rounded-md border shrink-0 ${
+          isDark
+            ? 'bg-neutral-950 border-neutral-800'
+            : 'bg-neutral-100 border-neutral-300'
+        }`}>
           <button
-            role="tab"
-            aria-selected={activeViewTab === 'shelves'}
-            onClick={() => setActiveViewTab('shelves')}
-            className={`min-touch-target px-3.5 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
-              activeViewTab === 'shelves'
-                ? 'bg-white text-black font-bold ring-1 ring-white'
-                : 'text-neutral-400 hover:text-white'
+            onClick={() => setActiveViewTab('bookshelf')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono font-bold transition-all ${
+              activeViewTab === 'bookshelf'
+                ? isDark ? 'bg-white text-black' : 'bg-neutral-900 text-white'
+                : isDark ? 'text-neutral-400 hover:text-white' : 'text-neutral-700 hover:text-neutral-900'
             }`}
           >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Shelves Hub</span>
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Bookshelf ({resources.length})</span>
           </button>
-
           <button
-            role="tab"
-            aria-selected={activeViewTab === 'notepad_tasks'}
             onClick={() => setActiveViewTab('notepad_tasks')}
-            className={`min-touch-target px-3.5 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono font-bold transition-all ${
               activeViewTab === 'notepad_tasks'
-                ? 'bg-white text-black font-bold ring-1 ring-white'
-                : 'text-neutral-400 hover:text-white'
+                ? isDark ? 'bg-white text-black' : 'bg-neutral-900 text-white'
+                : isDark ? 'text-neutral-400 hover:text-white' : 'text-neutral-700 hover:text-neutral-900'
             }`}
           >
             <ListTodo className="w-3.5 h-3.5" />
-            <span>Notepad & Tasks</span>
+            <span>Notepad & Tasks ({tasks.length})</span>
           </button>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* MODE 1: SHELVES SHORTCUT PORTALS (v1.1.2 Focus Mode Architecture)         */}
+      {/* MODE 1: BOOKSHELF VOLUMES */}
       {/* ========================================================================= */}
-      {activeViewTab === 'shelves' && (
-        <div className="space-y-6 animate-fade-in">
-          {/* Curricular Learning Paths & Accreditations Gateway Banner */}
-          {onOpenCurricularPortal && (
-            <div
-              onClick={onOpenCurricularPortal}
-              className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-neutral-900 via-neutral-900 to-neutral-950 border border-neutral-800 hover:border-neutral-600 transition-all cursor-pointer shadow-lg group relative overflow-hidden select-none"
-            >
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-start gap-3.5">
-                  <div className="w-11 h-11 rounded-xl bg-black border border-neutral-700 flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform shadow-inner">
-                    <GraduationCap className="w-6 h-6 text-neutral-200" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-xs font-bold text-white uppercase tracking-wider">
-                        CURRICULAR LEARNING PATHS & ACCREDITATIONS
-                      </span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold uppercase">
-                        Accredited Academy
-                      </span>
-                    </div>
-                    <p className="text-xs text-neutral-400 font-sans max-w-xl leading-relaxed">
-                      Follow structured syllabi with self-paced knowledge checks, earn cryptographically verified degree certificates, and unlock rare living companion fish.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 shrink-0 self-end md:self-center font-mono">
-                  <div className="text-right hidden sm:block">
-                    <span className="text-[11px] text-neutral-400 block">
-                      {enrolledPathsCount} Enrolled · {earnedCertificatesCount} Degrees
-                    </span>
-                    <span className="text-[10px] text-emerald-400">● Interactive Roadmaps Ready</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenCurricularPortal();
-                    }}
-                    className="px-4 py-2 rounded-xl bg-white hover:bg-neutral-200 text-black font-mono font-bold text-xs flex items-center gap-1.5 shadow active:scale-95 transition-all group-hover:ring-2 group-hover:ring-white/50"
-                  >
-                    <span>Launch Portal</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                  </button>
-                </div>
-              </div>
+      {activeViewTab === 'bookshelf' && (
+        <div className="space-y-6">
+          {/* Quick Tasks Strip Banner above Bookshelf */}
+          <div className={`border rounded-lg p-3 sm:px-4 flex items-center justify-between gap-3 text-xs ${
+            isDark
+              ? 'bg-neutral-900 border-neutral-800'
+              : 'bg-neutral-50 border-neutral-300'
+          }`}>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded border uppercase shrink-0 ${
+                isDark
+                  ? 'bg-neutral-800 text-white border-neutral-700'
+                  : 'bg-neutral-200 text-neutral-900 border-neutral-400'
+              }`}>
+                Active Checklist
+              </span>
+              <span className={`truncate ${
+                isDark ? 'text-neutral-300' : 'text-neutral-700'
+              }`}>
+                {completedCount} of {tasks.length} tasks completed ({taskProgress}%)
+              </span>
             </div>
-          )}
+            <button
+              onClick={() => setActiveViewTab('notepad_tasks')}
+              className={`text-xs font-mono flex items-center gap-1 shrink-0 underline ${
+                isDark
+                  ? 'text-neutral-300 hover:text-white'
+                  : 'text-neutral-700 hover:text-neutral-900'
+              }`}
+            >
+              <span>Open Notepad & Tasks</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
 
-          {/* Search & Actions Bar */}
-          <div
-            style={{
-              background: 'var(--theme-card-gradient, #121212)',
-              borderColor: 'var(--theme-card-border, #404040)'
-            }}
-            className="border-2 rounded-xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg"
-          >
-            <div className="flex-1 w-full flex items-center gap-2 bg-black/40 px-3 py-2 rounded-lg border border-white/20 text-xs">
-              <Search className="w-4 h-4 text-neutral-400 shrink-0" />
+          {/* Filter & Search Bar */}
+          <div className={`border rounded-lg p-3 flex flex-col sm:flex-row items-center gap-2.5 ${
+            isDark
+              ? 'bg-neutral-900 border-neutral-800'
+              : 'bg-neutral-50 border-neutral-300'
+          }`}>
+            <div className={`flex-1 w-full flex items-center gap-2 px-3 py-2 rounded border text-xs ${
+              isDark
+                ? 'bg-neutral-950 border-neutral-800'
+                : 'bg-white border-neutral-300'
+            }`}>
+              <Search className={`w-4 h-4 shrink-0 ${
+                isDark ? 'text-neutral-500' : 'text-neutral-400'
+              }`} />
               <input
                 type="text"
-                placeholder="Search across all shelves by title, category, or tag..."
+                placeholder="Search bookshelf by title, subject, or tags..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="bg-transparent text-white outline-none w-full placeholder-neutral-400 font-mono"
+                className={`bg-transparent outline-none w-full placeholder-opacity-60 font-mono ${
+                  isDark
+                    ? 'text-white placeholder-neutral-500'
+                    : 'text-neutral-900 placeholder-neutral-400'
+                }`}
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="text-neutral-400 hover:text-white text-xs font-mono"
+                  className={`text-xs font-mono ${
+                    isDark
+                      ? 'text-neutral-500 hover:text-white'
+                      : 'text-neutral-400 hover:text-neutral-900'
+                  }`}
                 >
                   [X]
                 </button>
               )}
             </div>
 
+            {/* Category Filter Buttons with 44px touch targets */}
+            <div
+              role="tablist"
+              aria-label="Bookshelf categories"
+              className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto no-scrollbar text-xs font-mono py-1"
+            >
+              {[
+                { id: 'all', label: 'All' },
+                { id: 'pinned', label: 'Pinned' },
+                { id: 'favorites', label: 'Starred' },
+                { id: 'document', label: 'Docs' },
+                { id: 'presentation', label: 'Slides' },
+                { id: 'notebook', label: 'Notebooks' },
+                { id: 'pdf', label: 'PDFs' },
+                { id: 'lesson', label: 'Lessons' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  role="tab"
+                  aria-selected={activeTypeFilter === tab.id}
+                  onClick={() => {
+                    if (activeTypeFilter !== tab.id) {
+                      setIsShelfLoading(true);
+                      setActiveTypeFilter(tab.id);
+                      setTimeout(() => setIsShelfLoading(false), 220);
+                    }
+                  }}
+                  className={`min-touch-target px-3.5 py-2 rounded transition-all whitespace-nowrap focus-visible:ring-2 flex items-center justify-center ${
+                    activeTypeFilter === tab.id
+                      ? isDark ? 'bg-white text-black font-bold ring-1 ring-white' : 'bg-neutral-900 text-white font-bold ring-1 ring-neutral-900'
+                      : isDark
+                      ? 'bg-neutral-950 text-neutral-400 hover:text-white border border-neutral-800'
+                      : 'bg-white text-neutral-700 hover:text-neutral-900 border border-neutral-300'
+                  } ${isDark ? 'focus-visible:ring-white' : 'focus-visible:ring-neutral-900'}`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
             <button
               onClick={onCreateResourceClick}
-              style={{
-                backgroundColor: 'var(--theme-action-btn-bg, #ffffff)',
-                color: 'var(--theme-action-btn-text, #000000)'
-              }}
-              className="min-touch-target w-full sm:w-auto px-4 py-2 rounded-lg font-mono font-bold text-xs flex items-center justify-center gap-1.5 shrink-0 transition-all active:scale-95 shadow-md"
+              className={`min-touch-target w-full sm:w-auto px-4 py-2 rounded font-mono font-bold text-xs flex items-center justify-center gap-1.5 shrink-0 focus-visible:ring-2 border ${
+                isDark
+                  ? 'bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-600 focus-visible:ring-white'
+                  : 'bg-neutral-200 hover:bg-neutral-300 text-neutral-900 border-neutral-400 focus-visible:ring-neutral-900'
+              }`}
             >
               <Plus className="w-4 h-4" />
               <span>New Volume</span>
             </button>
           </div>
 
-          {/* Shelving System Division Switcher (Categories vs Role Shelves vs Hybrid) */}
-          <div
-            style={{
-              background: 'var(--theme-card-gradient, #121212)',
-              borderColor: 'var(--theme-card-border, #404040)'
-            }}
-            className="border-2 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs font-mono shadow-lg"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-neutral-400 font-bold uppercase tracking-wider text-[10px]">
-                Shelving System:
+          {/* BOOKSHELF GRID (Acting like physical books with customizable covers & ADAPTIVE FONT READABILITY) */}
+          <div className="space-y-3">
+            <div className={`flex items-center justify-between text-xs px-1 font-mono ${
+              isDark ? 'text-neutral-300' : 'text-neutral-700'
+            }`}>
+              <span className="font-bold uppercase tracking-wider">
+                Volumes On Shelf ({filteredResources.length})
               </span>
-              <span style={{ color: 'var(--theme-text-primary, #ffffff)' }} className="font-bold">
-                {shelvingMode === 'hybrid' ? '⚡ Hybrid Mode' : shelvingMode === 'role_owned' ? '👤 Role-Owned Shelves' : '🗂️ Subject Categories'}
+              <span className={`hidden sm:inline ${
+                isDark ? 'text-neutral-500' : 'text-neutral-600'
+              }`}>
+                Click book to open • Palette icon to adjust cover shade
               </span>
             </div>
 
-            <div className="flex items-center gap-1 bg-black/40 p-1 rounded-lg border border-white/20 self-stretch sm:self-auto justify-between sm:justify-end">
-              <button
-                type="button"
-                onClick={() => handleShelvingModeChange('categories')}
-                className={`px-3 py-1.5 rounded text-[11px] font-bold transition-all ${
-                  shelvingMode === 'categories'
-                    ? 'bg-white text-black shadow-xs'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                Subject Categories
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleShelvingModeChange('role_owned')}
-                className={`px-3 py-1.5 rounded text-[11px] font-bold transition-all ${
-                  shelvingMode === 'role_owned'
-                    ? 'bg-white text-black shadow-xs'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                Role Shelves
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleShelvingModeChange('hybrid')}
-                className={`px-3 py-1.5 rounded text-[11px] font-bold transition-all ${
-                  shelvingMode === 'hybrid'
-                    ? 'bg-white text-black shadow-xs'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                Hybrid Mode
-              </button>
-            </div>
-          </div>
-
-          {/* SHELVES SHORTCUT CARDS GRID */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {shelvesData.map(shelf => {
-              const ShelfIcon = shelf.icon;
-              const matchesSearch = !searchQuery.trim() || 
-                shelf.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                shelf.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                shelf.items.some(i => i.title.toLowerCase().includes(searchQuery.toLowerCase()));
-
-              if (!matchesSearch) return null;
-
-              return (
-                <motion.div
-                  key={shelf.id}
-                  whileHover={{ y: -4, transition: { duration: 0.15 } }}
-                  onClick={() => {
-                    setActiveFocusShelfId(shelf.id);
-                    setInShelfSearchQuery('');
-                    setShelfSort('default');
-                    onShowToast(`Transporting to ${shelf.name} (Focus Mode)`);
-                  }}
-                  style={{
-                    background: 'var(--theme-card-gradient, #121212)',
-                    borderColor: 'var(--theme-card-border, #404040)'
-                  }}
-                  className="rounded-2xl border-2 hover:border-white p-5 cursor-pointer group flex flex-col justify-between space-y-4 shadow-xl transition-all relative overflow-hidden"
+            {isShelfLoading ? (
+              <SkeletonLoader type="shelf" count={8} label="Loading bookshelf volumes..." className="py-2" />
+            ) : filteredResources.length === 0 ? (
+              <div className={`p-12 rounded-lg border text-center flex flex-col items-center justify-center gap-2 ${
+                isDark
+                  ? 'bg-neutral-900 border-neutral-800'
+                  : 'bg-neutral-100 border-neutral-300'
+              }`}>
+                <BookOpen className={`w-8 h-8 ${
+                  isDark ? 'text-neutral-500' : 'text-neutral-500'
+                }`} />
+                <span className={`font-bold text-sm font-mono ${
+                  isDark ? 'text-white' : 'text-neutral-900'
+                }`}>No books found in this shelf section</span>
+                <p className={`text-xs max-w-xs ${
+                  isDark ? 'text-neutral-400' : 'text-neutral-600'
+                }`}>
+                  Create a new notebook, doc, presentation, or lesson to expand your customized library.
+                </p>
+                <button
+                  onClick={onCreateResourceClick}
+                  className={`min-touch-target mt-2 px-4 py-2 rounded font-mono font-bold text-xs focus-visible:ring-2 ${
+                    isDark
+                      ? 'bg-white text-black hover:bg-neutral-200 focus-visible:ring-white'
+                      : 'bg-neutral-900 text-white hover:bg-neutral-800 focus-visible:ring-neutral-900'
+                  }`}
                 >
-                  {/* Subtle Background Accent */}
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-2xl pointer-events-none group-hover:bg-white/10 transition-colors" />
+                  + Create New Volume
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                <AnimatePresence>
+                  {filteredResources.map(book => {
+                    const Icon = getIconForType(book.type);
+                    const isColorPickerOpen = activeColorPickerId === book.id;
+                    const isBadgePickerOpen = activeBadgePickerId === book.id;
 
-                  {/* Top Header */}
+                    // ADAPTABLE FONT COLOR COMPUTATION FOR MAXIMUM READABILITY
+                    const cover = book.coverColor || '#1a1a1a';
+                    const isLight = isLightBackground(cover);
+                    const textColor = getAdaptiveTextColor(cover);
+                    const subtextColor = getAdaptiveSubtextColor(cover);
+
+                    return (
+                      <motion.div
+                        key={book.id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        whileHover={{ y: -4, transition: { duration: 0.15 } }}
+                        className="relative group flex flex-col items-center select-none"
+                      >
+                        {/* PHYSICAL BOOK COVER CONTAINER WITH ADAPTIVE CONTRAST TEXT */}
+                        <div
+                          onClick={() => onOpenResource(book)}
+                          style={{
+                            backgroundColor: cover,
+                            color: textColor
+                          }}
+                          className={`w-full aspect-[1/1.38] rounded-r-lg rounded-l-sm cursor-pointer transition-all duration-300 relative overflow-hidden flex flex-col justify-between p-3 sm:p-4 border ${
+                            isLight
+                              ? 'border-neutral-400 shadow-md ring-1 ring-black/10'
+                              : 'border-neutral-700 shadow-xl'
+                          }`}
+                        >
+                          {/* Realistic Book Spine Groove */}
+                          <div
+                            className={`absolute top-0 bottom-0 left-0 w-3.5 z-10 pointer-events-none ${
+                              isLight
+                                ? 'bg-black/15 border-r border-black/20'
+                                : 'bg-black/50 border-r border-black/40'
+                            }`}
+                          />
+                          <div
+                            className={`absolute top-0 bottom-0 left-3.5 w-0.5 pointer-events-none ${
+                              isLight ? 'bg-white/40' : 'bg-white/10'
+                            }`}
+                          />
+
+                          {/* Top Status & Controls */}
+                          <div className="flex items-start justify-between relative z-20 pl-2">
+                            <div
+                              className={`p-1.5 rounded border flex items-center justify-center ${
+                                isLight
+                                  ? 'bg-black text-white border-black'
+                                  : 'bg-neutral-900 text-white border-neutral-700'
+                              }`}
+                            >
+                              <Icon className="w-3.5 h-3.5" />
+                            </div>
+
+                            <div
+                              className="flex items-center gap-1"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={() => onToggleFavorite(book.id)}
+                                className={`p-1 rounded border transition-all ${
+                                  isLight
+                                    ? book.isFavorite
+                                      ? 'bg-black text-white border-black'
+                                      : 'bg-white/80 text-black border-neutral-400 hover:bg-black hover:text-white'
+                                    : book.isFavorite
+                                    ? 'bg-white text-black border-white'
+                                    : 'bg-black/70 text-neutral-400 border-neutral-700 hover:text-white'
+                                }`}
+                                title={book.isFavorite ? 'Starred' : 'Star Volume'}
+                              >
+                                <Star className={`w-3 h-3 ${book.isFavorite ? 'fill-current' : ''}`} />
+                              </button>
+
+                              <button
+                                onClick={() => onTogglePin(book.id)}
+                                className={`p-1 rounded border transition-all ${
+                                  isLight
+                                    ? book.isPinned
+                                      ? 'bg-black text-white border-black'
+                                      : 'bg-white/80 text-black border-neutral-400 hover:bg-black hover:text-white'
+                                    : book.isPinned
+                                    ? 'bg-white text-black border-white'
+                                    : 'bg-black/70 text-neutral-400 border-neutral-700 hover:text-white'
+                                }`}
+                                title={book.isPinned ? 'Pinned to Hub' : 'Pin to Hub'}
+                              >
+                                <Pin className={`w-3 h-3 ${book.isPinned ? 'fill-current' : ''}`} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Book Front Title & Typography: READABILITY PRIORITIZED */}
+                          <div className="relative z-20 pl-2 my-auto">
+                            <span
+                              style={{ color: subtextColor }}
+                              className="text-[10px] uppercase font-mono tracking-wider block mb-1 font-bold"
+                            >
+                              {book.category}
+                            </span>
+                            <h3
+                              style={{ color: textColor }}
+                              className="font-bold text-sm sm:text-base leading-tight line-clamp-3 font-sans"
+                            >
+                              {book.title}
+                            </h3>
+                            <p
+                              style={{ color: subtextColor }}
+                              className="text-[10px] mt-1 line-clamp-2 leading-relaxed"
+                            >
+                              {book.description}
+                            </p>
+                          </div>
+
+                          {/* Bottom Spine Ribbon / Badge */}
+                          <div
+                            className={`relative z-20 pl-2 flex items-center justify-between pt-2 border-t ${
+                              isLight ? 'border-neutral-300' : 'border-neutral-800'
+                            }`}
+                          >
+                            <span
+                              className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold truncate max-w-[100px] border ${
+                                isLight
+                                  ? 'bg-black text-white border-black'
+                                  : 'bg-neutral-900 text-white border-neutral-700'
+                              }`}
+                            >
+                              {book.badge || '★ Favorite'}
+                            </span>
+
+                            <span
+                              style={{ color: textColor }}
+                              className="text-[10px] font-bold group-hover:scale-105 transition-transform flex items-center gap-0.5 font-mono"
+                            >
+                              [OPEN] <Maximize2 className="w-2.5 h-2.5" />
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Quick Customization Controls Under Book */}
+                        <div className="w-full mt-2 flex items-center justify-between px-1 text-xs">
+                          {/* Palette Button */}
+                          <div className="relative">
+                            <button
+                              onClick={e => {
+                                e.stopPropagation();
+                                setActiveColorPickerId(isColorPickerOpen ? null : book.id);
+                                setActiveBadgePickerId(null);
+                              }}
+                              className="flex items-center gap-1 text-[11px] text-neutral-400 hover:text-white py-0.5 px-1.5 rounded hover:bg-neutral-800 transition-colors font-mono"
+                              title="Quick Color Palette"
+                            >
+                              <Palette className="w-3 h-3" />
+                              <span className="hidden xs:inline">Cover</span>
+                            </button>
+
+                            {/* Color Picker Dropdown */}
+                            {isColorPickerOpen && (
+                              <>
+                                <div
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setActiveColorPickerId(null);
+                                  }}
+                                  className="fixed inset-0 z-40 bg-black/50"
+                                />
+                                <div
+                                  onClick={e => e.stopPropagation()}
+                                  className="fixed sm:absolute bottom-4 sm:bottom-full left-4 sm:left-0 right-4 sm:right-auto mx-auto sm:mx-0 max-w-xs sm:max-w-none sm:w-52 z-50 p-3 rounded-lg bg-neutral-900 border border-neutral-700 shadow-2xl flex flex-col gap-2 font-sans"
+                                >
+                                  <div className="flex items-center justify-between pb-1 border-b border-neutral-800">
+                                    <span className="text-[10px] font-mono font-bold text-neutral-300 uppercase tracking-wider">
+                                      [COVER SHADE]
+                                    </span>
+                                    <button
+                                      onClick={() => setActiveColorPickerId(null)}
+                                      className="text-neutral-500 hover:text-white text-xs px-1 font-mono"
+                                    >
+                                      [X]
+                                    </button>
+                                  </div>
+
+                                  <div className="grid grid-cols-4 gap-1.5">
+                                    {PRESET_COLORS.map(c => (
+                                      <button
+                                        key={c.color}
+                                        type="button"
+                                        onClick={() => {
+                                          onUpdateCoverColor(book.id, c.color);
+                                          if (onUpdateResource) onUpdateResource(book.id, { coverColor: c.color });
+                                          setActiveColorPickerId(null);
+                                          onShowToast(`Cover shade set to ${c.name}`);
+                                        }}
+                                        style={{ backgroundColor: c.color }}
+                                        className="w-8 h-8 rounded border border-neutral-700 hover:scale-105 active:scale-95 transition-transform flex items-center justify-center"
+                                        title={c.name}
+                                      >
+                                        {book.coverColor === c.color && (
+                                          <Check className={`w-3.5 h-3.5 ${isLightBackground(c.color) ? 'text-black' : 'text-white'}`} />
+                                        )}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          {/* Badge Button */}
+                          <div className="relative">
+                            <button
+                              onClick={e => {
+                                e.stopPropagation();
+                                setActiveBadgePickerId(isBadgePickerOpen ? null : book.id);
+                                setActiveColorPickerId(null);
+                              }}
+                              className="flex items-center gap-1 text-[11px] text-neutral-400 hover:text-white py-0.5 px-1.5 rounded hover:bg-neutral-800 transition-colors font-mono"
+                              title="Assign Badge"
+                            >
+                              <Tag className="w-3 h-3" />
+                              <span className="hidden xs:inline">Badge</span>
+                            </button>
+
+                            {isBadgePickerOpen && (
+                              <>
+                                <div
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setActiveBadgePickerId(null);
+                                  }}
+                                  className="fixed inset-0 z-40 bg-black/50"
+                                />
+                                <div
+                                  onClick={e => e.stopPropagation()}
+                                  className="fixed sm:absolute bottom-4 sm:bottom-full left-4 sm:left-0 right-4 sm:right-auto mx-auto sm:mx-0 max-w-xs sm:max-w-none sm:w-56 z-50 p-2.5 rounded-lg bg-neutral-900 border border-neutral-700 shadow-2xl flex flex-col gap-1.5 font-sans"
+                                >
+                                  <div className="flex items-center justify-between pb-1 border-b border-neutral-800">
+                                    <span className="text-[10px] font-mono font-bold text-neutral-300 uppercase tracking-wider">
+                                      [SELECT BADGE]
+                                    </span>
+                                    <button
+                                      onClick={() => setActiveBadgePickerId(null)}
+                                      className="text-neutral-500 hover:text-white text-xs px-1 font-mono"
+                                    >
+                                      [X]
+                                    </button>
+                                  </div>
+
+                                  <div className="max-h-48 overflow-y-auto space-y-1 no-scrollbar">
+                                    {AVAILABLE_BADGES.map(b => (
+                                      <button
+                                        key={b.id}
+                                        type="button"
+                                        onClick={() => {
+                                          onUpdateBadge(book.id, b.label);
+                                          if (onUpdateResource) onUpdateResource(book.id, { badge: b.label });
+                                          setActiveBadgePickerId(null);
+                                          onShowToast(`Badge set to ${b.label}`);
+                                        }}
+                                        className="w-full text-left px-2 py-1.5 rounded hover:bg-neutral-800 text-xs text-white flex items-center justify-between transition-colors font-mono"
+                                      >
+                                        <span>{b.label}</span>
+                                        {book.badge === b.label && <Check className="w-3 h-3 text-white" />}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          {/* Quick Edit */}
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              startEditing(book);
+                            }}
+                            className="flex items-center gap-1 text-[11px] text-neutral-400 hover:text-white py-0.5 px-1.5 rounded hover:bg-neutral-800 transition-colors font-mono"
+                            title="Edit details"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                            <span className="hidden xs:inline">Edit</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODE 2: NOTEPAD / TODO TASKS NOTES SECTION IN LIBRARY */}
+      {/* ========================================================================= */}
+      {activeViewTab === 'notepad_tasks' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* LEFT COLUMN: INTERACTIVE TODO TASKS MATRIX (5 COLS) */}
+            <div className="lg:col-span-5 space-y-4">
+              <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4 sm:p-5">
+                <div className="flex items-center justify-between mb-3 border-b border-neutral-800 pb-3">
                   <div>
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="w-11 h-11 rounded-xl bg-black border border-neutral-700 flex items-center justify-center text-white shrink-0 group-hover:border-white transition-colors shadow-inner">
-                        <ShelfIcon className="w-5 h-5 text-neutral-300 group-hover:text-white" />
-                      </div>
+                    <h2 className="text-sm font-bold text-white font-mono flex items-center gap-2">
+                      <ListTodo className="w-4 h-4 text-white" />
+                      Library Reading Tasks & Checkpoints
+                    </h2>
+                    <p className="text-[11px] text-neutral-400 mt-0.5">
+                      Checkpoints linked to your {userRole} role ecosystem.
+                    </p>
+                  </div>
+                  <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-neutral-800 text-white border border-neutral-700">
+                    {completedCount}/{tasks.length}
+                  </span>
+                </div>
 
-                      <span className="px-2.5 py-1 rounded-full bg-black text-neutral-300 border border-neutral-750 font-mono text-[11px] font-bold">
-                        {shelf.items.length} {shelf.items.length === 1 ? 'Volume' : 'Volumes'}
-                      </span>
+                {/* Progress Bar */}
+                <div className="w-full bg-neutral-950 rounded-full h-2 mb-4 border border-neutral-800 overflow-hidden">
+                  <div
+                    className="bg-white h-full transition-all duration-300"
+                    style={{ width: `${taskProgress}%` }}
+                  />
+                </div>
+
+                {/* Task Filter Tabs */}
+                <div className="flex gap-1 mb-3 text-[11px] font-mono">
+                  {[
+                    { id: 'all', label: 'All' },
+                    { id: 'pending', label: 'Active' },
+                    { id: 'completed', label: 'Done' },
+                    { id: 'role', label: `My Role (${userRole})` }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setTaskFilter(tab.id as any)}
+                      className={`px-2 py-1 rounded transition-colors ${
+                        taskFilter === tab.id
+                          ? 'bg-white text-black font-bold'
+                          : 'bg-neutral-950 text-neutral-400 hover:text-white border border-neutral-800'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Add Task Form */}
+                <form onSubmit={handleAddTask} className="space-y-2 mb-4 p-2.5 rounded bg-neutral-950 border border-neutral-800">
+                  <input
+                    type="text"
+                    value={newTaskText}
+                    onChange={e => setNewTaskText(e.target.value)}
+                    placeholder="Add task (e.g. Read §3, annotate formula)..."
+                    className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-white placeholder-neutral-500 font-mono focus:outline-none focus:border-white"
+                  />
+                  <div className="flex items-center justify-between gap-2">
+                    <select
+                      value={newTaskPriority}
+                      onChange={e => setNewTaskPriority(e.target.value as any)}
+                      className="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-[11px] text-neutral-300 font-mono focus:outline-none"
+                    >
+                      <option value="high">High Priority</option>
+                      <option value="medium">Medium Priority</option>
+                      <option value="normal">Normal</option>
+                    </select>
+
+                    <button
+                      type="submit"
+                      className="px-3 py-1 bg-white text-black hover:bg-neutral-200 rounded font-mono font-bold text-xs flex items-center gap-1 transition-all"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Add</span>
+                    </button>
+                  </div>
+                </form>
+
+                {/* Task List */}
+                <div className="space-y-2 max-h-[380px] overflow-y-auto no-scrollbar">
+                  {filteredTasks.length === 0 ? (
+                    <div className="text-center py-8 text-neutral-500 text-xs font-mono">
+                      No tasks matching this filter.
                     </div>
+                  ) : (
+                    filteredTasks.map(t => (
+                      <div
+                        key={t.id}
+                        className={`p-2.5 rounded border transition-all flex items-start justify-between gap-2 ${
+                          t.completed
+                            ? 'bg-neutral-950/60 border-neutral-800/60 opacity-60'
+                            : 'bg-neutral-950 border-neutral-800'
+                        }`}
+                      >
+                        <button
+                          onClick={() => handleToggleTask(t.id)}
+                          className="mt-0.5 text-neutral-400 hover:text-white transition-colors shrink-0"
+                        >
+                          {t.completed ? (
+                            <CheckSquare className="w-4 h-4 text-white" />
+                          ) : (
+                            <Square className="w-4 h-4 text-neutral-500" />
+                          )}
+                        </button>
 
-                    <h3 className="font-mono text-base font-bold text-white group-hover:underline tracking-tight mb-1">
-                      {shelf.name}
-                    </h3>
-                    <p className="text-xs text-neutral-400 line-clamp-2">
-                      {shelf.description}
+                        <div className="flex-1 min-w-0">
+                          <span
+                            className={`text-xs block leading-snug ${
+                              t.completed ? 'line-through text-neutral-500' : 'text-neutral-200'
+                            }`}
+                          >
+                            {t.text}
+                          </span>
+                          <div className="flex items-center gap-1.5 mt-1 font-mono text-[9px]">
+                            {t.roleTag && (
+                              <span className="px-1.5 py-0.2 rounded bg-neutral-900 border border-neutral-700 text-neutral-300">
+                                {t.roleTag}
+                              </span>
+                            )}
+                            <span className={`px-1.5 py-0.2 rounded ${
+                              t.priority === 'high'
+                                ? 'bg-white text-black font-bold'
+                                : 'bg-neutral-900 border border-neutral-700 text-neutral-400'
+                            }`}>
+                              {t.priority}
+                            </span>
+                            {t.dueDate && <span className="text-neutral-500">{t.dueDate}</span>}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => handleDeleteTask(t.id)}
+                          className="p-1 text-neutral-600 hover:text-red-400 transition-colors"
+                          title="Delete task"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: QUICK SCRATCHPAD NOTEPAD WITH ADAPTABLE FONT COLOR (7 COLS) */}
+            <div className="lg:col-span-7 space-y-4">
+              <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4 sm:p-5">
+                <div className="flex items-center justify-between mb-3 border-b border-neutral-800 pb-3 flex-wrap gap-2">
+                  <div>
+                    <h2 className="text-sm font-bold text-white font-mono flex items-center gap-2">
+                      <FileEdit className="w-4 h-4 text-white" />
+                      Reading Scratchpad & Synthesis Buffer
+                    </h2>
+                    <p className="text-[11px] text-neutral-400 mt-0.5">
+                      Prioritizing font readability with adaptive luminance contrast.
                     </p>
                   </div>
 
-                  {/* Shelf Tags Chips */}
-                  <div>
-                    <div className="flex items-center gap-1.5 flex-wrap mb-3">
-                      {shelf.tags.slice(0, 3).map((tag, tIdx) => (
-                        <span
-                          key={tIdx}
-                          className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/60 text-neutral-400 border border-neutral-800"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                      {shelf.tags.length > 3 && (
-                        <span className="text-[10px] font-mono text-neutral-500">
-                          +{shelf.tags.length - 3}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Enter Shortcut Action Prompt */}
-                    <div className="pt-3 border-t border-neutral-800 flex items-center justify-between text-xs font-mono text-neutral-400 group-hover:text-white transition-colors">
-                      <span className="text-[11px]">Enter Shelf Focus</span>
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* MODE 2: NOTEPAD & TASKS SCRATCHPAD                                        */}
-      {/* ========================================================================= */}
-      {activeViewTab === 'notepad_tasks' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
-          {/* TASK CHECKLIST SECTION */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4 shadow-xl">
-            <div className="flex items-center justify-between border-b border-neutral-800 pb-3 font-mono">
-              <span className="font-bold text-white text-sm flex items-center gap-2">
-                <ListTodo className="w-4 h-4 text-white" />
-                Library Active Checklist
-              </span>
-              <span className="text-xs text-neutral-400">
-                {tasks.filter(t => t.completed).length} / {tasks.length} Completed
-              </span>
-            </div>
-
-            {/* Add Task Input */}
-            <div className="flex items-center gap-2 font-mono text-xs">
-              <input
-                type="text"
-                value={newTaskText}
-                onChange={e => setNewTaskText(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && newTaskText.trim()) {
-                    setTasks(prev => [
-                      ...prev,
-                      {
-                        id: `task-${Date.now()}`,
-                        text: newTaskText.trim(),
-                        completed: false,
-                        category: newTaskCategory,
-                        priority: newTaskPriority,
-                        roleTag: userRole
-                      }
-                    ]);
-                    setNewTaskText('');
-                    onShowToast('Task added to library checklist');
-                  }
-                }}
-                placeholder="Add new study checkpoint or reading goal..."
-                className="flex-1 bg-black border border-neutral-700 rounded-lg px-3 py-2 text-white placeholder-neutral-500 outline-none focus:border-white"
-              />
-              <button
-                onClick={() => {
-                  if (newTaskText.trim()) {
-                    setTasks(prev => [
-                      ...prev,
-                      {
-                        id: `task-${Date.now()}`,
-                        text: newTaskText.trim(),
-                        completed: false,
-                        category: newTaskCategory,
-                        priority: newTaskPriority,
-                        roleTag: userRole
-                      }
-                    ]);
-                    setNewTaskText('');
-                    onShowToast('Task added to library checklist');
-                  }
-                }}
-                className="px-3.5 py-2 rounded-lg bg-white text-black font-bold hover:bg-neutral-200 active:scale-95 transition-all"
-              >
-                Add
-              </button>
-            </div>
-
-            {/* Tasks List */}
-            <div className="space-y-2 max-h-[380px] overflow-y-auto no-scrollbar font-mono text-xs">
-              {tasks.map(task => (
-                <div
-                  key={task.id}
-                  onClick={() =>
-                    setTasks(prev =>
-                      prev.map(t => (t.id === task.id ? { ...t, completed: !t.completed } : t))
-                    )
-                  }
-                  className={`p-3 rounded-lg border flex items-center justify-between gap-3 cursor-pointer transition-all ${
-                    task.completed
-                      ? 'bg-black/40 border-neutral-850 opacity-60'
-                      : 'bg-black border-neutral-800 hover:border-neutral-700 text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    {task.completed ? (
-                      <CheckSquare className="w-4 h-4 text-white shrink-0" />
-                    ) : (
-                      <Square className="w-4 h-4 text-neutral-500 shrink-0" />
-                    )}
-                    <span className={`truncate ${task.completed ? 'line-through text-neutral-500' : 'text-neutral-200'}`}>
-                      {task.text}
-                    </span>
-                  </div>
-
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-neutral-900 text-neutral-400 border border-neutral-800 shrink-0">
-                    {task.category}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* READING SCRATCHPAD SECTION */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-3 shadow-xl flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between border-b border-neutral-800 pb-3 font-mono">
-                <span className="font-bold text-white text-sm flex items-center gap-2">
-                  <FileEdit className="w-4 h-4 text-white" />
-                  Reading Scratchpad
-                </span>
-
-                {/* Tone Toggle */}
-                <div className="flex items-center gap-1 bg-black p-0.5 rounded border border-neutral-800 text-xs">
-                  <button
-                    onClick={() => setNotepadPaperTone('dark')}
-                    className={`px-2 py-0.5 rounded ${notepadPaperTone === 'dark' ? 'bg-white text-black font-bold' : 'text-neutral-400'}`}
-                  >
-                    Dark
-                  </button>
-                  <button
-                    onClick={() => setNotepadPaperTone('light')}
-                    className={`px-2 py-0.5 rounded ${notepadPaperTone === 'light' ? 'bg-white text-black font-bold' : 'text-neutral-400'}`}
-                  >
-                    Light
-                  </button>
-                </div>
-              </div>
-
-              <textarea
-                value={notepadContent}
-                onChange={e => setNotepadContent(e.target.value)}
-                rows={12}
-                style={{
-                  backgroundColor: notepadPaperTone === 'light' ? '#f5f5f5' : '#050505',
-                  color: notepadPaperTone === 'light' ? '#111111' : '#f5f5f5'
-                }}
-                className="w-full mt-3 p-3 rounded-xl border border-neutral-800 font-mono text-xs leading-relaxed outline-none focus:border-neutral-500 resize-none shadow-inner"
-              />
-            </div>
-
-            <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400 pt-2 border-t border-neutral-800">
-              <span>Auto-cached to session buffer</span>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(notepadContent);
-                  onShowToast('Copied scratchpad text to clipboard');
-                }}
-                className="text-white hover:underline flex items-center gap-1 font-bold"
-              >
-                <Copy className="w-3 h-3" />
-                <span>Copy Notes</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* FULL-SCREEN DARK FOCUS MODE SHELF OVERLAY (v1.1.2)                       */}
-      {/* "similar to focus mode when clicked it would transport you to a darker   */}
-      {/* background, no other content is shown not even the top and bottom bar,  */}
-      {/* only an exit button"                                                     */}
-      {/* ========================================================================= */}
-      <AnimatePresence>
-        {activeFocusShelf && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 bg-[#070707] text-white flex flex-col overflow-hidden font-sans select-none"
-          >
-            {/* Top Distraction-Free Header with Exit Button Only */}
-            <div className="h-16 px-4 sm:px-6 bg-[#0d0d0d] border-b border-neutral-800 flex items-center justify-between gap-3 shrink-0">
-              {/* Shelf Title & Icon */}
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-black border border-neutral-750 flex items-center justify-center text-white shrink-0">
-                  {React.createElement(activeFocusShelf.icon, { className: 'w-4 h-4 text-neutral-300' })}
-                </div>
-                <div>
+                  {/* Adaptable Font Readability Tone Switcher */}
                   <div className="flex items-center gap-2">
-                    <h2 className="font-mono text-sm sm:text-base font-bold text-white uppercase tracking-tight">
-                      {activeFocusShelf.name}
-                    </h2>
-                    <span className="px-2 py-0.5 rounded bg-neutral-800 text-neutral-300 font-mono text-[10px] font-bold">
-                      {focusedShelfItems.length} {focusedShelfItems.length === 1 ? 'Volume' : 'Volumes'}
-                    </span>
-                  </div>
-                  <span className="text-[11px] text-neutral-400 font-mono hidden sm:inline">
-                    Focus Mode • Zero Distraction Shelf View
-                  </span>
-                </div>
-              </div>
+                    <div className="flex items-center bg-neutral-950 p-0.5 rounded border border-neutral-800 font-mono text-xs">
+                      <button
+                        onClick={() => setNotepadPaperTone('light')}
+                        className={`px-2 py-1 rounded flex items-center gap-1 transition-all ${
+                          notepadPaperTone === 'light'
+                            ? 'bg-white text-black font-bold'
+                            : 'text-neutral-400 hover:text-white'
+                        }`}
+                        title="Light Paper Tone: Enforces deep black text for high readability"
+                      >
+                        <Sun className="w-3 h-3" />
+                        <span>Light Paper</span>
+                      </button>
+                      <button
+                        onClick={() => setNotepadPaperTone('dark')}
+                        className={`px-2 py-1 rounded flex items-center gap-1 transition-all ${
+                          notepadPaperTone === 'dark'
+                            ? 'bg-neutral-800 text-white font-bold'
+                            : 'text-neutral-400 hover:text-white'
+                        }`}
+                        title="Dark Tone: Enforces pure white text for high readability"
+                      >
+                        <Moon className="w-3 h-3" />
+                        <span>Dark Carbon</span>
+                      </button>
+                    </div>
 
-              {/* Exit Button Only */}
-              <button
-                onClick={() => {
-                  setActiveFocusShelfId(null);
-                  onShowToast('Exited Shelf Focus View');
-                }}
-                className="min-h-[40px] px-4 py-2 rounded-lg bg-white hover:bg-neutral-200 text-black font-mono font-bold text-xs flex items-center gap-2 shadow-lg active:scale-95 transition-all"
-                title="Exit Shelf Focus View and return to Shelves Hub"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Exit Shelf</span>
-              </button>
-            </div>
-
-            {/* In-Shelf Sub-Controls: Search & Sort */}
-            <div className="px-4 sm:px-6 py-3 bg-[#0a0a0a] border-b border-neutral-850 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 font-mono text-xs">
-              <div className="w-full sm:max-w-md flex items-center gap-2 bg-black px-3 py-1.5 rounded-lg border border-neutral-800">
-                <Search className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
-                <input
-                  type="text"
-                  placeholder={`Search inside ${activeFocusShelf.name}...`}
-                  value={inShelfSearchQuery}
-                  onChange={e => setInShelfSearchQuery(e.target.value)}
-                  className="bg-transparent text-white outline-none w-full placeholder-neutral-500 font-mono text-xs"
-                />
-                {inShelfSearchQuery && (
-                  <button onClick={() => setInShelfSearchQuery('')} className="text-neutral-500 hover:text-white">
-                    [X]
-                  </button>
-                )}
-              </div>
-
-              {/* Sort Pills */}
-              <div className="flex items-center gap-1 bg-black p-1 rounded-lg border border-neutral-800">
-                <span className="text-[10px] text-neutral-500 px-1.5 hidden sm:inline">Sort:</span>
-                {(['default', 'tags', 'a-z', 'pinned', 'starred'] as ShelfSortOption[]).map(sOpt => (
-                  <button
-                    key={sOpt}
-                    onClick={() => {
-                      setShelfSort(sOpt);
-                      onShowToast(`Sorted by ${sOpt.toUpperCase()}`);
-                    }}
-                    className={`px-2.5 py-1 rounded text-[10px] uppercase font-bold transition-all ${
-                      shelfSort === sOpt
-                        ? 'bg-white text-black'
-                        : 'text-neutral-400 hover:text-white'
-                    }`}
-                  >
-                    {sOpt === 'default' ? 'Orig' : sOpt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Focused Shelf Volumes Grid Stage */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-8 no-scrollbar">
-              <div className="max-w-6xl mx-auto">
-                {focusedShelfItems.length === 0 ? (
-                  <div className="p-16 rounded-2xl bg-[#0f0f0f] border border-neutral-800 text-center flex flex-col items-center justify-center gap-3 my-8">
-                    <BookOpen className="w-10 h-10 text-neutral-600" />
-                    <span className="font-bold text-sm text-white font-mono">
-                      No volumes found matching query in this shelf
-                    </span>
                     <button
-                      onClick={onCreateResourceClick}
-                      className="px-4 py-2 rounded-lg bg-white text-black font-mono font-bold text-xs"
+                      onClick={handleCopyNotes}
+                      className="p-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700 transition-colors"
+                      title="Copy notes"
                     >
-                      + Create New Volume In Shelf
+                      <Copy className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6 animate-fade-in">
-                    {focusedShelfItems.map(book => (
-                      <div key={book.id} className="relative group flex flex-col items-center">
-                        {renderPhysicalCover(book)}
+                </div>
 
-                        {/* Quick Action Toolbar Below Card */}
-                        <div className="w-full flex items-center justify-between pt-2 px-1 text-[11px] font-mono text-neutral-400">
-                          <button
-                            onClick={() => startEditing(book)}
-                            className="hover:text-white flex items-center gap-1 transition-colors"
-                            title="Edit Title, Tags & Color"
-                          >
-                            <Edit3 className="w-3 h-3" />
-                            <span>Edit</span>
-                          </button>
-
-                          <button
-                            onClick={() => onTogglePin(book.id)}
-                            className={`flex items-center gap-1 ${book.isPinned ? 'text-white' : 'hover:text-white'}`}
-                          >
-                            <Pin className="w-3 h-3" />
-                          </button>
-
-                          <button
-                            onClick={() => onToggleFavorite(book.id)}
-                            className={`flex items-center gap-1 ${book.isFavorite ? 'text-white' : 'hover:text-white'}`}
-                          >
-                            <Star className="w-3 h-3" />
-                          </button>
-
-                          {onDeleteResource && (
-                            <button
-                              onClick={() => setDeletingResource(book)}
-                              className="text-neutral-500 hover:text-red-400 flex items-center gap-1 transition-colors"
-                              title="Delete Volume"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                {/* Adaptive Notepad Textarea */}
+                <div
+                  className={`rounded-lg p-4 transition-colors duration-200 border ${
+                    notepadPaperTone === 'light'
+                      ? 'bg-white border-neutral-300 text-[#0a0a0a] shadow-inner'
+                      : 'bg-neutral-950 border-neutral-800 text-[#f5f5f5]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-[10px] font-mono mb-2 pb-1 border-b border-neutral-300/40">
+                    <span className={notepadPaperTone === 'light' ? 'text-neutral-600' : 'text-neutral-400'}>
+                      ADAPTABLE INK: {notepadPaperTone === 'light' ? 'DEEP CARBON (#0A0A0A)' : 'CRISP WHITE (#FFFFFF)'}
+                    </span>
+                    <span className={notepadPaperTone === 'light' ? 'text-neutral-600' : 'text-neutral-400'}>
+                      {notepadContent.split(/\s+/).filter(Boolean).length} words • {notepadContent.length} chars
+                    </span>
                   </div>
-                )}
+
+                  <textarea
+                    value={notepadContent}
+                    onChange={e => setNotepadContent(e.target.value)}
+                    rows={14}
+                    style={{
+                      color: notepadPaperTone === 'light' ? '#0a0a0a' : '#ffffff'
+                    }}
+                    className={`w-full bg-transparent resize-y outline-none font-mono text-xs leading-relaxed ${
+                      notepadPaperTone === 'light'
+                        ? 'placeholder-neutral-500'
+                        : 'placeholder-neutral-600'
+                    }`}
+                    placeholder="Type synthesis thoughts, reading insights, or quick citations..."
+                  />
+                </div>
+
+                <div className="mt-3 flex items-center justify-between text-[11px] text-neutral-400 font-mono">
+                  <span>Auto-saved to working session</span>
+                  <button
+                    onClick={() => {
+                      setNotepadContent('');
+                      onShowToast('Scratchpad cleared');
+                    }}
+                    className="text-neutral-500 hover:text-white transition-colors"
+                  >
+                    Clear Scratchpad
+                  </button>
+                </div>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      )}
 
-      {/* EDIT VOLUME MODAL */}
+      {/* ========================================================================= */}
+      {/* EDIT RESOURCE MODAL */}
+      {/* ========================================================================= */}
       {editingResource && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fade-in font-sans">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-5 max-w-md w-full space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-              <span className="font-mono text-sm font-bold text-white uppercase tracking-wider">
-                Edit Volume Details
-              </span>
+        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
+          isDark ? 'bg-black/80' : 'bg-white/60'
+        }`}>
+          <div className={`w-full max-w-lg rounded-lg p-5 shadow-2xl font-sans border ${
+            isDark
+              ? 'bg-neutral-900 border-neutral-700 text-white'
+              : 'bg-white border-neutral-300 text-neutral-900'
+          }`}>
+            <div className={`flex items-center justify-between pb-3 border-b ${
+              isDark ? 'border-neutral-800' : 'border-neutral-200'
+            }`}>
+              <h2 className={`text-base font-bold font-mono ${
+                isDark ? 'text-white' : 'text-neutral-900'
+              }`}>Edit Shelf Volume</h2>
               <button
                 onClick={() => setEditingResource(null)}
-                className="text-neutral-400 hover:text-white"
+                className={`font-mono text-xs ${
+                  isDark
+                    ? 'text-neutral-400 hover:text-white'
+                    : 'text-neutral-600 hover:text-neutral-900'
+                }`}
               >
-                <X className="w-5 h-5" />
+                [X]
               </button>
             </div>
 
-            <form onSubmit={handleSaveEdit} className="space-y-3 font-mono text-xs">
+            <form onSubmit={handleSaveEdit} className="space-y-3 mt-4 text-xs">
               <div>
-                <label className="text-neutral-400 block mb-1">Volume Title</label>
+                <label className={`block mb-1 font-mono ${
+                  isDark ? 'text-neutral-400' : 'text-neutral-600'
+                }`}>Volume Title</label>
                 <input
                   type="text"
                   value={editTitle}
                   onChange={e => setEditTitle(e.target.value)}
-                  className="w-full bg-black border border-neutral-700 rounded-lg px-3 py-2 text-white outline-none focus:border-white"
+                  className={`w-full rounded px-3 py-2 font-mono outline-none focus:border-white border ${
+                    isDark
+                      ? 'bg-neutral-950 border-neutral-700 text-white'
+                      : 'bg-neutral-50 border-neutral-300 text-neutral-900'
+                  }`}
                 />
               </div>
 
               <div>
-                <label className="text-neutral-400 block mb-1">Shelf Category</label>
+                <label className={`block mb-1 font-mono ${
+                  isDark ? 'text-neutral-400' : 'text-neutral-600'
+                }`}>Category / Course Code</label>
                 <input
                   type="text"
                   value={editCategory}
                   onChange={e => setEditCategory(e.target.value)}
-                  className="w-full bg-black border border-neutral-700 rounded-lg px-3 py-2 text-white outline-none focus:border-white"
+                  className={`w-full rounded px-3 py-2 font-mono outline-none focus:border-white border ${
+                    isDark
+                      ? 'bg-neutral-950 border-neutral-700 text-white'
+                      : 'bg-neutral-50 border-neutral-300 text-neutral-900'
+                  }`}
                 />
               </div>
 
               <div>
-                <label className="text-neutral-400 block mb-1">Tags (Comma-separated)</label>
+                <label className={`block mb-1 font-mono ${
+                  isDark ? 'text-neutral-400' : 'text-neutral-600'
+                }`}>Description</label>
+                <textarea
+                  value={editDescription}
+                  onChange={e => setEditDescription(e.target.value)}
+                  rows={2}
+                  className={`w-full rounded px-3 py-2 font-mono outline-none focus:border-white border ${
+                    isDark
+                      ? 'bg-neutral-950 border-neutral-700 text-white'
+                      : 'bg-neutral-50 border-neutral-300 text-neutral-900'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className={`block mb-1 font-mono ${
+                  isDark ? 'text-neutral-400' : 'text-neutral-600'
+                }`}>Tags (comma separated)</label>
                 <input
                   type="text"
                   value={editTags}
                   onChange={e => setEditTags(e.target.value)}
-                  className="w-full bg-black border border-neutral-700 rounded-lg px-3 py-2 text-white outline-none focus:border-white"
+                  className={`w-full rounded px-3 py-2 font-mono outline-none focus:border-white border ${
+                    isDark
+                      ? 'bg-neutral-950 border-neutral-700 text-white'
+                      : 'bg-neutral-50 border-neutral-300 text-neutral-900'
+                  }`}
                 />
               </div>
 
+              {/* Cover Shade Selector */}
               <div>
-                <label className="text-neutral-400 block mb-1">Role Shelf Ownership</label>
-                <select
-                  value={editRoleShelf}
-                  onChange={e => setEditRoleShelf(e.target.value as RoleShelfType)}
-                  className="w-full bg-black border border-neutral-700 rounded-lg px-3 py-2 text-white outline-none focus:border-white font-mono"
-                >
-                  <option value="personal">📁 Personal Shelf (Journals & Scratchpads)</option>
-                  <option value="academic">🎓 Academic & Student Shelf (Courses & Lessons)</option>
-                  <option value="researcher">🔬 Researcher Shelf (Papers & Whitepapers)</option>
-                  <option value="educator">🏛️ Educator Shelf (Slides & Decks)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-neutral-400 block mb-1">Cover Tone</label>
-                <div className="flex items-center gap-2 flex-wrap">
+                <label className={`block mb-1 font-mono ${
+                  isDark ? 'text-neutral-400' : 'text-neutral-600'
+                }`}>Cover Shade</label>
+                <div className="grid grid-cols-8 gap-2">
                   {PRESET_COLORS.map(c => (
                     <button
                       key={c.color}
                       type="button"
                       onClick={() => setEditColor(c.color)}
                       style={{ backgroundColor: c.color }}
-                      className={`w-7 h-7 rounded-full border-2 transition-transform ${
-                        editColor === c.color ? 'border-white scale-110 shadow' : 'border-neutral-700'
+                      className={`w-8 h-8 rounded border hover:scale-105 flex items-center justify-center ${
+                        isDark ? 'border-neutral-700' : 'border-neutral-400'
                       }`}
-                    />
+                    >
+                      {editColor === c.color && (
+                        <Check className={`w-3.5 h-3.5 ${isLightBackground(c.color) ? 'text-black' : 'text-white'}`} />
+                      )}
+                    </button>
                   ))}
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-neutral-800">
+              {/* Checkboxes */}
+              <div className="flex items-center gap-4 pt-2">
+                <label className={`flex items-center gap-2 cursor-pointer font-mono ${
+                  isDark ? 'text-white' : 'text-neutral-900'
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={editIsPinned}
+                    onChange={e => setEditIsPinned(e.target.checked)}
+                    className={`rounded ${
+                      isDark
+                        ? 'bg-neutral-950 border-neutral-700'
+                        : 'bg-neutral-100 border-neutral-400'
+                    }`}
+                  />
+                  <span>Pin to Hub</span>
+                </label>
+                <label className={`flex items-center gap-2 cursor-pointer font-mono ${
+                  isDark ? 'text-white' : 'text-neutral-900'
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={editIsFavorite}
+                    onChange={e => setEditIsFavorite(e.target.checked)}
+                    className={`rounded ${
+                      isDark
+                        ? 'bg-neutral-950 border-neutral-700'
+                        : 'bg-neutral-100 border-neutral-400'
+                    }`}
+                  />
+                  <span>Star Volume</span>
+                </label>
+              </div>
+
+              {/* Actions */}
+              <div className={`flex justify-end gap-2 pt-3 border-t ${
+                isDark ? 'border-neutral-800' : 'border-neutral-200'
+              }`}>
                 <button
                   type="button"
                   onClick={() => setEditingResource(null)}
-                  className="px-4 py-2 rounded-lg bg-neutral-800 text-neutral-300 font-bold hover:bg-neutral-700"
+                  className={`px-3 py-1.5 rounded font-mono ${
+                    isDark
+                      ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'
+                      : 'bg-neutral-200 hover:bg-neutral-300 text-neutral-700'
+                  }`}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg bg-white text-black font-bold hover:bg-neutral-200"
+                  className={`px-4 py-1.5 rounded font-mono font-bold ${
+                    isDark
+                      ? 'bg-white text-black hover:bg-neutral-200'
+                      : 'bg-neutral-900 text-white hover:bg-neutral-800'
+                  }`}
                 >
-                  Save Changes
+                  Save Volume
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
-      {/* DELETE RESOURCE CONFIRMATION MODAL */}
-      {deletingResource && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm font-sans">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-5 max-w-sm w-full space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-              <span className="font-mono text-sm font-bold text-red-400 uppercase">
-                Delete Volume
-              </span>
-              <button
-                onClick={() => setDeletingResource(null)}
-                className="text-neutral-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-neutral-300 font-mono leading-relaxed">
-              Are you sure you want to delete <strong>"{deletingResource.title}"</strong> from your library shelf?
-            </p>
-
-            <div className="flex items-center justify-end gap-2 pt-2 font-mono text-xs">
-              <button
-                onClick={() => setDeletingResource(null)}
-                className="px-3.5 py-2 rounded-lg bg-neutral-800 text-neutral-300 font-bold hover:bg-neutral-700"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  if (onDeleteResource) {
-                    onDeleteResource(deletingResource.id);
-                  }
-                  setDeletingResource(null);
-                }}
-                className="px-3.5 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
-};
+});

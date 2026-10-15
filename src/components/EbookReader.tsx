@@ -36,11 +36,26 @@ export const EbookReader: React.FC<EbookReaderProps> = ({
   const [theme, setTheme] = useState<'dark' | 'sepia' | 'light'>(ebook.metadata.ebookTheme || 'dark');
   const [activeChapterIndex, setActiveChapterIndex] = useState(ebook.metadata.activeChapterIndex || 0);
   const [showBadgePicker, setShowBadgePicker] = useState(false);
+  const [loadedChapters, setLoadedChapters] = useState<Set<number>>(new Set([0]));
+  const [isLoadingChapter, setIsLoadingChapter] = useState(false);
 
   const chapters = ebook.metadata.chapters || [
     { id: 'ch-1', title: 'Chapter 1: The Affordances of Invisible Interfaces', readingTime: '12 min', content: 'Sample chapter content...' }
   ];
   const activeChapter = chapters[activeChapterIndex] || chapters[0];
+
+  // Progressive chapter loading: preload adjacent chapters
+  React.useEffect(() => {
+    setIsLoadingChapter(true);
+    const chaptersToLoad = [activeChapterIndex];
+    if (activeChapterIndex > 0) chaptersToLoad.push(activeChapterIndex - 1);
+    if (activeChapterIndex < chapters.length - 1) chaptersToLoad.push(activeChapterIndex + 1);
+
+    setTimeout(() => {
+      setLoadedChapters(prev => new Set([...prev, ...chaptersToLoad]));
+      setIsLoadingChapter(false);
+    }, 100);
+  }, [activeChapterIndex, chapters.length]);
 
   const togglePin = () => {
     const next = !ebook.isPinned;

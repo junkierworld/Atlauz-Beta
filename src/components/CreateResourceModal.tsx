@@ -24,6 +24,7 @@ interface CreateResourceModalProps {
   onClose: () => void;
   onCreateResource: (resource: ResourceItem, openImmediately: boolean) => void;
   onShowToast: (msg: string) => void;
+  settings?: { theme?: 'light' | 'dark' };
 }
 
 const RESOURCE_TYPES: Array<{
@@ -95,8 +96,10 @@ export const CreateResourceModal: React.FC<CreateResourceModalProps> = ({
   isOpen,
   onClose,
   onCreateResource,
-  onShowToast
+  onShowToast,
+  settings = { theme: 'dark' }
 }) => {
+  const isDark = settings.theme === 'dark';
   const [selectedType, setSelectedType] = useState<ResourceType>('notebook');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
@@ -263,14 +266,20 @@ export const CreateResourceModal: React.FC<CreateResourceModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="create-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/85 font-sans"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-3 font-sans ${
+        isDark ? 'bg-black/85' : 'bg-white/60'
+      }`}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="bg-neutral-900 text-white border border-neutral-700 rounded-lg shadow-2xl w-full max-w-lg p-5 flex flex-col max-h-[90vh] overflow-y-auto animate-fade-in"
+        className={`border rounded-lg shadow-2xl w-full max-w-lg p-5 flex flex-col max-h-[90vh] overflow-y-auto animate-fade-in ${
+          isDark
+            ? 'bg-neutral-900 text-white border-neutral-700'
+            : 'bg-white text-neutral-900 border-neutral-300'
+        }`}
       >
         {/* Modal Header */}
         <div className="flex items-center justify-between pb-3 border-b border-neutral-800">

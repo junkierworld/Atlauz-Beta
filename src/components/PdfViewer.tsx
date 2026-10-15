@@ -37,6 +37,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
   const [zoom, setZoom] = useState(100);
   const [searchQuery, setSearchQuery] = useState('');
   const [showBadgePicker, setShowBadgePicker] = useState(false);
+  const [loadedPages, setLoadedPages] = useState<Set<number>>(new Set([1]));
+  const [isLoadingPage, setIsLoadingPage] = useState(false);
   const [highlights, setHighlights] = useState(
     pdf.metadata.highlights || [
       { id: 'hl-1', page: 3, text: 'Attenuation coefficient alpha = 0.048 dB/km at oceanic isotherms below 4°C', note: 'Critical constant', color: '#00f2fe' }
@@ -44,6 +46,19 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({
   );
 
   const totalPages = pdf.metadata.pageCount || 16;
+
+  // Progressive page loading: preload adjacent pages
+  React.useEffect(() => {
+    setIsLoadingPage(true);
+    const pagesToLoad = [currentPage];
+    if (currentPage > 1) pagesToLoad.push(currentPage - 1);
+    if (currentPage < totalPages) pagesToLoad.push(currentPage + 1);
+
+    setTimeout(() => {
+      setLoadedPages(prev => new Set([...prev, ...pagesToLoad]));
+      setIsLoadingPage(false);
+    }, 100);
+  }, [currentPage, totalPages]);
 
   const togglePin = () => {
     const next = !pdf.isPinned;

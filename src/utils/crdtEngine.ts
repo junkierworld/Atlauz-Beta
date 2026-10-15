@@ -128,8 +128,14 @@ export function applyCrdtOperation(
 
     switch (op.type) {
       case 'INSERT_BLOCK': {
+        // Prevent duplicate blocks by checking if block with same ID already exists
+        const blockId = op.payload.id || `blk-${Date.now()}`;
+        if (tile.blocks.some(b => b.id === blockId)) {
+          return tile; // Block already exists, skip insertion
+        }
+        
         const newBlock: CollaborativeBlockItem = {
-          id: op.payload.id || `blk-${Date.now()}`,
+          id: blockId,
           content: op.payload.content,
           author: op.author,
           initials: op.initials,

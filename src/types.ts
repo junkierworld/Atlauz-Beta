@@ -300,6 +300,8 @@ import type { AppThemeId } from './themes';
 export interface UserAccountSettings {
   username: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
   avatarUrl?: string;
   bio: string;
   personality: PersonalityType;

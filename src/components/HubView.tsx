@@ -1,24 +1,20 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
-  Rocket,
-  Activity,
+  LayoutGrid,
+  Square,
+  Layers,
+  Users,
   ArrowRight,
-  Database,
-  Cloud,
-  Palette,
-  Pin,
-  BookOpen,
   Plus,
-  Clock,
-  ShieldCheck,
-  ExternalLink,
-  Search,
-  Presentation
+  Brain,
+  Flame,
+  BookOpen,
+  FileText,
+  X,
+  Check,
+  Trash2
 } from 'lucide-react';
-import { CognitiveTelemetry, ConnectedApp, ResourceItem, CompanionState, UserRole, UserAccountSettings } from '../types';
-import { FrostedPanel } from './FrostedPanel';
-import { AtlauzLogo } from './AtlauzLogo';
-import { HubWelcome } from './HubWelcome';
+import { CognitiveTelemetry, ConnectedApp, ResourceItem, CompanionState, UserRole, UserAccountSettings, HubTaskItem } from '../types';
 
 interface HubViewProps {
   telemetry: CognitiveTelemetry;
@@ -28,647 +24,757 @@ interface HubViewProps {
   onOpenResource: (resource: ResourceItem) => void;
   onCreateResourceClick: () => void;
   onOpenLibrary: () => void;
-  onOpenWorkspace: () => void;
+  onOpenWorkspace: (mode?: 'dominant' | 'pile' | 'bento' | 'collab') => void;
   onOpenFishing?: () => void;
   onOpenProfile?: () => void;
   onShowToast: (msg: string) => void;
   userRole?: UserRole;
   settings?: UserAccountSettings;
+  onOpenFlashcards?: () => void;
 }
 
 export const HubView = React.memo(function HubViewComponent({
   telemetry,
-  connectedApps,
   resources,
   companion,
-  onOpenResource,
-  onCreateResourceClick,
-  onOpenLibrary,
   onOpenWorkspace,
   onOpenFishing,
-  onOpenProfile,
+  onCreateResourceClick,
+  onOpenLibrary,
   onShowToast,
-  userRole = 'Student',
-  settings
+  settings,
+  onOpenFlashcards
 }: HubViewProps) {
-  const isDark = settings?.theme && !settings.theme.includes('light');
+  // Get computed theme colors from CSS variables
+  const getThemeColors = () => {
+    const root = document.documentElement;
+    const getColor = (varName: string) => getComputedStyle(root).getPropertyValue(varName).trim();
+    
+    return {
+      primary: getColor('--theme-primary') || '#e63946',
+      secondary: getColor('--theme-secondary') || '#f4a261',
+      bgPrimary: getColor('--theme-bg-primary') || '#0a0a0a',
+      bgSecondary: getColor('--theme-bg-secondary') || '#1a1a1a',
+      cardBg: getColor('--theme-card-bg') || '#121212',
+      cardBorder: getColor('--theme-card-border') || '#262626',
+      textPrimary: getColor('--theme-text-primary') || '#ffffff',
+      textSecondary: getColor('--theme-text-secondary') || '#d4d4d4',
+      textMuted: getColor('--theme-text-muted') || '#888888',
+      accentGlow: getColor('--theme-accent-glow') || 'rgba(230, 57, 70, 0.3)'
+    };
+  };
   
-  // Track welcome card dismissal in session
-  const [dismissedWelcome, setDismissedWelcome] = useState(false);
+  const themeColors = useMemo(() => getThemeColors(), [settings?.theme]);
   
-  // Memoize filtered resources to prevent O(n) scans on every render
-  const pinnedResources = useMemo(
-    () => resources.filter(r => r.isPinned).slice(0, 4),
-    [resources]
-  );
+  // STATE: Pinned content
+  const [pinnedPool, setPinnedPool] = useState<string[]>([]);
+  const [activePinnedId, setActivePinnedId] = useState<string | null>(null);
   
-  const recentResources = useMemo(
-    () => resources.slice(0, 6),
-    [resources]
-  );
-  
-  // Frosted states map: when frosted, panel minimizes to ONLY show the title
-  const [frostedStates, setFrostedStates] = useState<{ [key: string]: boolean }>({
-    sprint: false,       // Defrosted by default
-    pinned: false,       // Defrosted by default
-    wellness: true,      // Frosted by default
-    integrations: true   // Frosted by default
+  // STATE: Tasks (persisted to localStorage)
+  const [tasks, setTasks] = useState<HubTaskItem[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('hubTasks') || '[]');
+    } catch {
+      return [];
+    }
   });
-
-  const toggleFrost = (key: string) => {
-    const isCurrentlyFrosted = frostedStates[key];
-    const nextState = !isCurrentlyFrosted;
-    setFrostedStates(prev => ({ ...prev, [key]: !prev[key] }));
-    onShowToast(nextState ? 'Panel Concealed to title' : 'Panel Revealed with full details');
+  
+  // STATE: Activities
+  const [activities, setActivities] = useState<any[]>([]);
+  
+  // STATE: Modals
+  const [isCustomizePinnedOpen, setIsCustomizePinnedOpen] = useState(false);
+  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [taskInput, setTaskInput] = useState('');
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  
+  // TASK OPERATIONS
+  const saveTasks = useCallback((newTasks: HubTaskItem[]) => {
+    setTasks(newTasks);
+    try {
+      localStorage.setItem('hubTasks', JSON.stringify(newTasks));
+    } catch (e) {
+      onShowToast('Failed to save tasks');
+    }
+  }, [onShowToast]);
+  
+  const addTask = useCallback((title: string) => {
+    if (!title.trim()) return;
+    const newTask: HubTaskItem = {
+      id: `task-${Date.now()}`,
+      title: title.trim(),
+      completed: false,
+      dueDate: ''
+    };
+    saveTasks([...tasks, newTask]);
+    setTaskInput('');
+    onShowToast('Task added');
+  }, [tasks, saveTasks, onShowToast]);
+  
+  const toggleTask = useCallback((id: string) => {
+    const updated = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+    saveTasks(updated);
+  }, [tasks, saveTasks]);
+  
+  const deleteTask = useCallback((id: string) => {
+    saveTasks(tasks.filter(t => t.id !== id));
+    onShowToast('Task deleted');
+  }, [tasks, saveTasks, onShowToast]);
+  
+  const updateTask = useCallback((id: string, title: string) => {
+    if (!title.trim()) return;
+    const updated = tasks.map(t => t.id === id ? { ...t, title: title.trim() } : t);
+    saveTasks(updated);
+    setEditingTaskId(null);
+  }, [tasks, saveTasks]);
+  
+  // PINNED CONTENT OPERATIONS
+  const resolveItemData = (id: string) => {
+    if (id === 'res-streak-widget') {
+      return {
+        id: 'res-streak-widget',
+        title: 'Streaks Iceberg',
+        subtitle: `${telemetry.streakDays}-Day Flow`,
+        tags: ['STREAK', 'FLOW'],
+        icon: Flame,
+        action: () => onOpenFishing?.()
+      };
+    }
+    if (id === 'res-flashcard-widget') {
+      return {
+        id: 'res-flashcard-widget',
+        title: 'Flashcard Decks',
+        subtitle: 'Study & Review',
+        tags: ['MEMORY', 'RECALL'],
+        icon: Brain,
+        action: () => onOpenFlashcards?.()
+      };
+    }
+    const found = resources.find(r => r.id === id);
+    if (found) {
+      const typeTag = found.type.toUpperCase();
+      const catTag = found.category.split('•')[0].trim().toUpperCase().slice(0, 8);
+      return {
+        id: found.id,
+        title: found.title,
+        subtitle: found.category,
+        tags: [typeTag, catTag],
+        icon: FileText,
+        action: () => onOpenLibrary()
+      };
+    }
+    return {
+      id,
+      title: 'Study Note',
+      subtitle: 'Create a new resource',
+      tags: ['NOTE', 'NEW'],
+      icon: BookOpen,
+      action: onCreateResourceClick
+    };
   };
 
-  // Remove the line that recalculates pinnedResources here since we memoized it above
+  const allResolvedPinned = useMemo(() => {
+    return pinnedPool.length > 0 ? pinnedPool.map(id => resolveItemData(id)) : [];
+  }, [pinnedPool, resources, telemetry.streakDays]);
+
+  const activePinnedItem = useMemo(() => {
+    if (!activePinnedId && allResolvedPinned.length > 0) return allResolvedPinned[0];
+    return allResolvedPinned.find(p => p.id === activePinnedId) || null;
+  }, [allResolvedPinned, activePinnedId]);
+
+  const subPinnedItems = useMemo(() => {
+    return activePinnedItem
+      ? allResolvedPinned.filter(p => p.id !== activePinnedItem.id).slice(0, 4)
+      : [];
+  }, [allResolvedPinned, activePinnedItem]);
+
+  const handlePromotePinned = (id: string) => {
+    setActivePinnedId(id);
+  };
   
+  const handleAddPin = useCallback((resourceId: string) => {
+    if (!pinnedPool.includes(resourceId)) {
+      setPinnedPool([...pinnedPool, resourceId]);
+      setActivePinnedId(resourceId);
+      onShowToast('Resource pinned');
+      setIsCustomizePinnedOpen(false);
+    }
+  }, [pinnedPool, onShowToast]);
+  
+  const handleRemovePin = useCallback((resourceId: string) => {
+    setPinnedPool(pinnedPool.filter(id => id !== resourceId));
+    if (activePinnedId === resourceId) {
+      setActivePinnedId(null);
+    }
+    onShowToast('Resource unpinned');
+  }, [pinnedPool, activePinnedId, onShowToast]);
+
+  const ActivePinnedIcon = activePinnedItem?.icon || BookOpen;
+
   return (
-    <div className="flex flex-col w-full max-w-3xl mx-auto space-y-3.5 animate-fade-in pb-20 font-sans">
-      {/* Hub Welcome Hero Card - Animated Introduction */}
-      {!dismissedWelcome && (
-        <HubWelcome
-          username={settings?.username || 'Learner'}
-          telemetry={telemetry}
-          settings={settings}
-          isFirstVisit={false}
-          onDismiss={() => setDismissedWelcome(true)}
-        />
-      )}
-
-      {/* Top Prototype State Bar */}
-      <div className={`flex items-center justify-between px-3 py-1.5 rounded border text-xs ${
-        isDark
-          ? 'border-neutral-800 bg-neutral-900/60'
-          : 'border-neutral-300 bg-neutral-100/60'
-      }`}>
-        <div className="flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full shrink-0 ${
-            isDark ? 'bg-white' : 'bg-neutral-900'
-          }`} />
-          <span className={`font-mono text-[11px] font-bold uppercase tracking-wider ${
-            isDark ? 'text-neutral-300' : 'text-neutral-700'
-          }`}>
-            [PROTOTYPE: WIREFRAME ENGINE]
-          </span>
-        </div>
-        <span className={`font-mono text-[11px] ${
-          isDark ? 'text-neutral-400' : 'text-neutral-600'
-        }`}>
-          Conceal / Reveal Panels Active
-        </span>
-      </div>
-
-      {/* Role Ecosystem Bar */}
-      <div className={`border rounded-lg p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
-        isDark
-          ? 'bg-neutral-900 border-neutral-800'
-          : 'bg-neutral-50 border-neutral-300'
-      }`}>
-        <div className="flex items-center gap-2.5">
-          <div className={`p-1.5 rounded font-mono font-bold text-[10px] uppercase border ${
-            isDark
-              ? 'bg-neutral-800 text-white border-neutral-700'
-              : 'bg-neutral-200 text-neutral-900 border-neutral-400'
-          }`}>
-            {userRole}
-          </div>
-          <div>
-            <div className={`font-bold font-mono text-xs flex items-center gap-1.5 ${
-              isDark ? 'text-white' : 'text-neutral-900'
-            }`}>
-              <span>{userRole === 'Student' ? 'Student Scholar Ecosystem' : userRole === 'Researcher' ? 'Investigator & Researcher Ecosystem' : 'Educator & Faculty Ecosystem'}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded border ${
-                isDark
-                  ? 'bg-neutral-800 text-neutral-300 border-neutral-700'
-                  : 'bg-neutral-200 text-neutral-700 border-neutral-400'
-              }`}>ONLINE</span>
-            </div>
-            <div className={`text-[11px] mt-0.5 ${
-              isDark ? 'text-neutral-400' : 'text-neutral-600'
-            }`}>
-              {userRole === 'Student'
-                ? 'Coursework mastery, lecture review & anti-burnout pacing active.'
-                : userRole === 'Researcher'
-                ? 'Hadal acoustics, citation matrix & deep sources active.'
-                : 'Curriculum architecture, 16:9 slides & cohort metrics active.'}
-            </div>
-          </div>
-        </div>
-
-        {onOpenProfile && (
-          <button
-            onClick={onOpenProfile}
-            className={`px-2.5 py-1 rounded font-mono text-[11px] flex items-center gap-1 shrink-0 self-start sm:self-auto border transition-all ${
-              isDark
-                ? 'bg-neutral-950 hover:bg-neutral-800 text-neutral-300 hover:text-white border-neutral-700'
-                : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700 hover:text-neutral-900 border-neutral-300'
-            }`}
+    <>
+      <div className="flex flex-col w-full max-w-5xl mx-auto min-h-screen select-none font-mono animate-fade-in justify-between p-1.5 sm:p-3 gap-2 overflow-hidden md:overflow-visible"
+        style={{
+          backgroundColor: themeColors.bgPrimary,
+          color: themeColors.textPrimary
+        }}
+      >
+        {/* 4-QUADRANT GRID */}
+        <div className="grid grid-cols-2 grid-rows-2 gap-2 sm:gap-3 flex-1 min-h-0 w-full h-auto md:h-full">
+          
+          {/* QUADRANT 1: PINNED CONTENT (Top Left) */}
+          <div className="border rounded-2xl p-2 sm:p-3 flex flex-col justify-between shadow-lg min-h-0 overflow-hidden"
+            style={{
+              backgroundColor: themeColors.cardBg,
+              borderColor: themeColors.cardBorder,
+              boxShadow: `0 4px 12px ${themeColors.accentGlow}`
+            }}
           >
-            <span>Tune Preferences</span>
-            <ArrowRight className="w-3 h-3" />
-          </button>
-        )}
-      </div>
-
-      {/* HERO: Functional Summary & Daily Telemetry */}
-      <div className={`rounded-lg border p-4 sm:p-5 relative ${
-        isDark
-          ? 'bg-neutral-900 border-neutral-700'
-          : 'bg-neutral-50 border-neutral-300'
-      }`}>
-        <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded border flex items-center justify-center shrink-0 ${
-              isDark
-                ? 'border-neutral-700 bg-neutral-850'
-                : 'border-neutral-300 bg-neutral-100'
-            }`}>
-              <AtlauzLogo variant="icon" size={24} animated={true} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <AtlauzLogo variant="wordmark" size="xs" animated={true} />
-                <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded border font-bold uppercase ${
-                  isDark
-                    ? 'bg-neutral-800 text-neutral-300 border-neutral-700'
-                    : 'bg-neutral-200 text-neutral-700 border-neutral-400'
-                }`}>
-                  ACTIVE
-                </span>
-              </div>
-              <p className={`text-[11px] mt-0.5 ${
-                isDark ? 'text-neutral-400' : 'text-neutral-600'
-              }`}>
-                Cognitive balance • Zero context-switching workspace
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0 w-full xs:w-auto justify-end">
-            <button
-              onClick={onOpenLibrary}
-              className={`px-3 py-1.5 rounded font-semibold text-xs flex items-center gap-1.5 transition-all border ${
-                isDark
-                  ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border-neutral-600'
-                  : 'bg-neutral-200 hover:bg-neutral-300 text-neutral-900 border-neutral-400'
-              }`}
+            <div className="w-full py-1 px-2.5 rounded-full border text-center shrink-0 shadow-xs"
+              style={{
+                backgroundColor: themeColors.bgSecondary,
+                borderColor: themeColors.cardBorder
+              }}
             >
-              <BookOpen className={`w-3.5 h-3.5 ${
-                isDark ? 'text-white' : 'text-neutral-900'
-              }`} />
-              <span>Library ({resources.length})</span>
-            </button>
-
-            <button
-              onClick={onCreateResourceClick}
-              className={`px-3.5 py-1.5 rounded font-bold text-xs active:scale-95 transition-all flex items-center gap-1.5 ${
-                isDark
-                  ? 'bg-white text-black hover:bg-neutral-200'
-                  : 'bg-neutral-900 text-white hover:bg-neutral-800'
-              }`}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Create</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Metrics Grid */}
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          <div
-            onClick={onOpenFishing}
-            className={`rounded border p-3 hover:border-opacity-75 transition-all cursor-pointer group ${
-              isDark
-                ? 'border-neutral-700 bg-neutral-950 hover:border-neutral-500'
-                : 'border-neutral-300 bg-neutral-100 hover:border-neutral-400'
-            }`}
-            title="Click to cast fishing rod to reel in a companion fish"
-          >
-            <div className={`flex items-center justify-between text-xs font-mono ${
-              isDark ? 'text-neutral-400' : 'text-neutral-600'
-            }`}>
-              <span className="text-[10px] uppercase flex items-center gap-1">
-                <span>[STREAK]</span> Deep Telemetry
-              </span>
-              <span className={`text-[10px] font-bold font-mono ${
-                isDark ? 'text-white' : 'text-neutral-900'
-              }`}>
-                {Math.floor(telemetry.streakDays / 20)} Cast Available
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider block font-mono"
+                style={{ color: themeColors.textSecondary }}
+              >
+                PINNED CONTENT
               </span>
             </div>
-            <div className="flex items-center justify-between my-1">
-              <span className={`text-xl sm:text-2xl font-bold tracking-tight tabular-nums ${
-                isDark ? 'text-white' : 'text-neutral-900'
-              }`}>
-                {telemetry.streakDays} Days
-              </span>
-              {onOpenFishing && (
-                <button
-                  onClick={e => {
-                    e.stopPropagation();
-                    onOpenFishing();
+
+            {activePinnedItem ? (
+              <>
+                <div 
+                  className="border rounded-xl p-2 sm:p-2.5 flex flex-col justify-between my-1 sm:my-1.5 flex-1 min-h-0 shadow-sm cursor-pointer text-left"
+                  style={{
+                    backgroundColor: themeColors.bgSecondary,
+                    borderColor: themeColors.primary,
+                    borderWidth: '2px'
                   }}
-                  className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold transition-all ${
-                    isDark
-                      ? 'bg-white text-black hover:bg-neutral-200'
-                      : 'bg-neutral-900 text-white hover:bg-neutral-800'
-                  }`}
+                  onClick={activePinnedItem.action}
                 >
-                  Cast Rod (20d)
+                  <div className="flex items-start justify-between gap-1 w-full min-h-0">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[11px] sm:text-xs font-bold block truncate font-sans"
+                        style={{ color: themeColors.textPrimary }}
+                      >
+                        {activePinnedItem.title}
+                      </span>
+                      <span className="text-[9px] block truncate mt-0.5"
+                        style={{ color: themeColors.textMuted }}
+                      >
+                        {activePinnedItem.subtitle}
+                      </span>
+                    </div>
+                    <div className="p-1 rounded-md border shrink-0"
+                      style={{
+                        backgroundColor: `${themeColors.primary}20`,
+                        borderColor: themeColors.primary,
+                        color: themeColors.primary
+                      }}
+                    >
+                      <ActivePinnedIcon className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t mt-1 shrink-0"
+                    style={{ borderColor: themeColors.textMuted + '30' }}
+                  >
+                    <div className="flex items-center gap-1 flex-wrap overflow-hidden">
+                      {activePinnedItem.tags.map((tag, idx) => (
+                        <span key={idx} className="px-1.5 py-0.5 rounded-full border text-[8px] sm:text-[9px] font-bold uppercase tracking-tight"
+                          style={{
+                            backgroundColor: `${themeColors.primary}15`,
+                            borderColor: themeColors.primary,
+                            color: themeColors.secondary
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        activePinnedItem.action();
+                      }}
+                      className="px-2.5 py-1 rounded-full border font-mono font-bold text-[9px] sm:text-[10px] flex items-center gap-1 transition-all shrink-0 shadow-xs"
+                      style={{
+                        backgroundColor: themeColors.primary,
+                        color: '#ffffff',
+                        borderColor: themeColors.secondary
+                      }}
+                    >
+                      <span>OPEN</span>
+                      <ArrowRight className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-1 sm:gap-1.5 shrink-0">
+                  {subPinnedItems.map((slot) => {
+                    const Icon = slot.icon;
+                    return (
+                      <button key={slot.id}
+                        onClick={() => handlePromotePinned(slot.id)}
+                        className="p-1.5 rounded-xl border transition-all flex items-center justify-center gap-1.5 min-h-[34px] sm:min-h-[40px]"
+                        style={{
+                          backgroundColor: themeColors.bgSecondary,
+                          borderColor: themeColors.cardBorder,
+                          color: themeColors.textSecondary
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = themeColors.primary + '15';
+                          e.currentTarget.style.borderColor = themeColors.primary;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = themeColors.bgSecondary;
+                          e.currentTarget.style.borderColor = themeColors.cardBorder;
+                        }}
+                      >
+                        <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: themeColors.primary }} />
+                        <span className="text-[9px] sm:text-[10px] font-bold truncate font-sans"
+                          style={{ color: themeColors.textSecondary }}
+                        >
+                          {slot.title.split(' ')[0]}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="flex-1 flex flex-col items-center justify-center text-center p-2 my-1 sm:my-1.5 cursor-pointer bg-transparent border-none"
+                style={{ color: themeColors.textMuted }}
+                onClick={() => setIsCustomizePinnedOpen(true)}
+              >
+                <Plus className="w-6 h-6 mb-2" style={{ color: themeColors.primary }} />
+                <p className="text-xs mb-2">Add pinned content</p>
+                <button 
+                  type="button"
+                  className="px-2.5 py-1 rounded text-[10px] font-mono font-bold"
+                  style={{
+                    backgroundColor: themeColors.primary,
+                    color: '#ffffff'
+                  }}
+                  onClick={() => setIsCustomizePinnedOpen(true)}
+                >
+                  Add
                 </button>
+              </button>
+            )}
+
+            <button onClick={() => setIsCustomizePinnedOpen(true)}
+              className="w-full mt-1 sm:mt-1.5 py-0.5 sm:py-1 rounded-full border text-center transition-colors shrink-0"
+              style={{
+                backgroundColor: themeColors.bgSecondary,
+                borderColor: themeColors.cardBorder,
+                color: themeColors.textMuted
+              }}
+            >
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider block font-mono">
+                CONFIGURE
+              </span>
+            </button>
+          </div>
+
+          {/* QUADRANT 2: FOCUS SHORTCUTS (Top Right) - THEME COMPLIANT */}
+          <div className="border rounded-2xl p-2 sm:p-3 flex flex-col justify-between shadow-lg min-h-0 overflow-hidden"
+            style={{
+              backgroundColor: themeColors.cardBg,
+              borderColor: themeColors.secondary,
+              boxShadow: `0 4px 12px ${themeColors.accentGlow}`
+            }}
+          >
+            <div className="w-full py-1 px-2.5 rounded-full border text-center shrink-0 shadow-xs"
+              style={{
+                backgroundColor: themeColors.bgSecondary,
+                borderColor: themeColors.secondary
+              }}
+            >
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider block font-mono"
+                style={{ color: themeColors.secondary }}
+              >
+                FOCUS SHORTCUTS
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-1 sm:gap-1.5 my-1 sm:my-1.5 flex-1 min-h-0">
+              {[
+                { icon: Square, label: 'FOCUS', action: () => onOpenWorkspace('dominant') },
+                { icon: LayoutGrid, label: 'BENTO', action: () => onOpenWorkspace('bento') },
+                { icon: Layers, label: 'PILE', action: () => onOpenWorkspace('pile') },
+                { icon: Users, label: 'COLLAB', action: () => onOpenWorkspace('collab') }
+              ].map(({ icon: Icon, label, action }) => (
+                <button 
+                  key={label}
+                  type="button"
+                  onClick={action}
+                  className="p-1.5 sm:p-2 rounded-xl border transition-all flex flex-col justify-between items-center text-center min-h-0 shadow-xs"
+                  style={{
+                    backgroundColor: themeColors.bgSecondary,
+                    borderColor: themeColors.secondary
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = themeColors.secondary + '20';
+                    e.currentTarget.style.borderColor = themeColors.primary;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = themeColors.bgSecondary;
+                    e.currentTarget.style.borderColor = themeColors.secondary;
+                  }}
+                >
+                  <div className="p-1 rounded-md border shrink-0"
+                    style={{
+                      backgroundColor: `${themeColors.secondary}20`,
+                      borderColor: themeColors.secondary,
+                      color: themeColors.secondary
+                    }}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-[10px] sm:text-[11px] font-bold uppercase block tracking-tight font-mono"
+                    style={{ color: themeColors.textPrimary }}
+                  >
+                    {label}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full border font-mono font-bold text-[8px] sm:text-[9px] block shadow-xs"
+                    style={{
+                      backgroundColor: themeColors.primary,
+                      borderColor: themeColors.secondary,
+                      color: '#ffffff'
+                    }}
+                  >
+                    OPEN
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <button className="w-full mt-1 sm:mt-1.5 py-0.5 sm:py-1 rounded-full border text-center transition-colors shrink-0"
+              style={{
+                backgroundColor: themeColors.bgSecondary,
+                borderColor: themeColors.secondary,
+                color: themeColors.textMuted
+              }}
+            >
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider block font-mono">
+                CONFIGURE
+              </span>
+            </button>
+          </div>
+
+          {/* QUADRANT 3: DUE ACTIVITIES (Bottom Left) */}
+          <div className="border rounded-2xl p-2 sm:p-3 flex flex-col justify-between shadow-lg min-h-0 overflow-hidden"
+            style={{
+              backgroundColor: themeColors.cardBg,
+              borderColor: themeColors.cardBorder,
+              boxShadow: `0 4px 12px ${themeColors.accentGlow}`
+            }}
+          >
+            <div className="w-full py-1 px-2.5 rounded-full border text-center shrink-0 shadow-xs"
+              style={{
+                backgroundColor: themeColors.bgSecondary,
+                borderColor: themeColors.cardBorder
+              }}
+            >
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider block font-mono"
+                style={{ color: themeColors.textSecondary }}
+              >
+                DUE ACTIVITIES
+              </span>
+            </div>
+
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-2 my-1 sm:my-1.5"
+              style={{ color: themeColors.textMuted }}
+            >
+              <p className="text-xs">No upcoming activities</p>
+            </div>
+
+            <button className="w-full mt-1 sm:mt-1.5 py-0.5 sm:py-1 rounded-full border text-center transition-colors shrink-0"
+              style={{
+                backgroundColor: themeColors.bgSecondary,
+                borderColor: themeColors.cardBorder,
+                color: themeColors.textMuted
+              }}
+            >
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider block font-mono">
+                CONFIGURE
+              </span>
+            </button>
+          </div>
+
+          {/* QUADRANT 4: TO-DO TASKS (Bottom Right) - FULLY INTERACTIVE */}
+          <div className="border rounded-2xl p-2 sm:p-3 flex flex-col justify-between shadow-lg min-h-0 overflow-hidden"
+            style={{
+              backgroundColor: themeColors.cardBg,
+              borderColor: themeColors.primary,
+              boxShadow: `0 4px 12px ${themeColors.accentGlow}`
+            }}
+          >
+            <div className="w-full py-1 px-2.5 rounded-full border text-center shrink-0 shadow-xs"
+              style={{
+                backgroundColor: themeColors.bgSecondary,
+                borderColor: themeColors.primary
+              }}
+            >
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider block font-mono"
+                style={{ color: themeColors.secondary }}
+              >
+                TO-DO TASKS
+              </span>
+            </div>
+
+            <div className="flex-1 flex flex-col my-1 sm:my-1.5 min-h-0 overflow-y-auto">
+              {tasks.length === 0 ? (
+                <button
+                  type="button"
+                  className="flex flex-col items-center justify-center text-center p-2 flex-1 bg-transparent border-none cursor-pointer"
+                  style={{ color: themeColors.textMuted }}
+                  onClick={() => setIsTaskFormOpen(true)}
+                >
+                  <p className="text-xs mb-2">No tasks yet</p>
+                  <button 
+                    type="button"
+                    onClick={() => setIsTaskFormOpen(true)}
+                    className="px-2.5 py-1 rounded text-[10px] font-mono font-bold"
+                    style={{
+                      backgroundColor: themeColors.secondary,
+                      color: '#ffffff'
+                    }}
+                  >
+                    <Plus className="w-3 h-3 inline mr-1" />
+                    Add Task
+                  </button>
+                </button>
+              ) : (
+                <div className="space-y-1 overflow-y-auto pr-1">
+                  {tasks.map((task) => (
+                    <div key={task.id}
+                      className="p-1.5 rounded border flex items-center gap-1.5 text-xs group hover:border-opacity-100 transition-all"
+                      style={{
+                        backgroundColor: task.completed ? themeColors.bgSecondary + '50' : themeColors.bgSecondary,
+                        borderColor: themeColors.primary,
+                        opacity: task.completed ? 0.6 : 1
+                      }}
+                    >
+                      <button onClick={() => toggleTask(task.id)} className="shrink-0"
+                        style={{ color: task.completed ? themeColors.primary : themeColors.textMuted }}
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      {editingTaskId === task.id ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          defaultValue={task.title}
+                          className="flex-1 bg-transparent text-[10px] border-none outline-none"
+                          style={{ color: themeColors.textPrimary }}
+                          onBlur={(e) => updateTask(task.id, e.currentTarget.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') updateTask(task.id, e.currentTarget.value);
+                            if (e.key === 'Escape') setEditingTaskId(null);
+                          }}
+                        />
+                      ) : (
+                        <span className="flex-1 text-[9px] sm:text-[10px] truncate cursor-pointer"
+                          style={{
+                            color: task.completed ? themeColors.textMuted : themeColors.textPrimary,
+                            textDecoration: task.completed ? 'line-through' : 'none'
+                          }}
+                          onClick={() => setEditingTaskId(task.id)}
+                        >
+                          {task.title}
+                        </span>
+                      )}
+                      <button onClick={() => deleteTask(task.id)}
+                        className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                        style={{ color: themeColors.primary }}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-            <div className={`w-full rounded-full h-1.5 overflow-hidden ${
-              isDark ? 'bg-neutral-800' : 'bg-neutral-300'
-            }`}>
-              <div
-                className={`h-full rounded-full transition-all duration-300 ${
-                  isDark ? 'bg-white' : 'bg-neutral-900'
-                }`}
-                style={{ width: `${Math.min(100, (telemetry.streakDays / 20) * 100)}%` }}
-              />
-            </div>
-            <div className={`flex items-center justify-between text-[10px] font-mono mt-1 ${
-              isDark ? 'text-neutral-500' : 'text-neutral-600'
-            }`}>
-              <span>{telemetry.streakDays % 20}/20 streaks to cast</span>
-              <span>Tank: {companion?.fishes?.length || 1}/5 Fishes</span>
-            </div>
-          </div>
 
-          <div className={`rounded border p-3 ${
-            isDark
-              ? 'border-neutral-700 bg-neutral-950'
-              : 'border-neutral-300 bg-neutral-100'
-          }`}>
-            <div className={`flex items-center justify-between text-xs font-mono ${
-              isDark ? 'text-neutral-400' : 'text-neutral-600'
-            }`}>
-              <span className="text-[10px] uppercase">[COMPANION TANK]</span>
-              <Activity className={`w-3.5 h-3.5 ${
-                isDark ? 'text-neutral-300' : 'text-neutral-700'
-              }`} />
-            </div>
-            <span className={`text-xl sm:text-2xl font-bold tracking-tight block my-1 ${
-              isDark ? 'text-white' : 'text-neutral-900'
-            }`}>
-              {companion?.name || 'Finley'}
-            </span>
-            <div className={`w-full rounded-full h-1.5 overflow-hidden ${
-              isDark ? 'bg-neutral-800' : 'bg-neutral-300'
-            }`}>
-              <div className={`h-full rounded-full ${
-                isDark ? 'bg-neutral-300' : 'bg-neutral-600'
-              }`} style={{ width: '92%' }} />
-            </div>
-            <div className={`flex items-center justify-between text-[10px] font-mono mt-1 ${
-              isDark ? 'text-neutral-400' : 'text-neutral-600'
-            }`}>
-              <span>State: Autonomous Swimming</span>
-              <span className={`font-semibold ${
-                isDark ? 'text-white' : 'text-neutral-900'
-              }`}>Primary Specimen</span>
-            </div>
+            {tasks.length > 0 && (
+              <div className="mt-1 flex gap-1">
+                <input
+                  type="text"
+                  placeholder="New..."
+                  value={taskInput}
+                  onChange={(e) => setTaskInput(e.currentTarget.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') addTask(taskInput);
+                  }}
+                  className="flex-1 px-2 py-1 rounded text-[9px] border"
+                  style={{
+                    backgroundColor: themeColors.bgSecondary,
+                    borderColor: themeColors.primary,
+                    color: themeColors.textPrimary
+                  }}
+                />
+                <button onClick={() => addTask(taskInput)}
+                  className="px-2 py-1 rounded text-[9px] font-bold"
+                  style={{
+                    backgroundColor: themeColors.primary,
+                    color: '#ffffff'
+                  }}
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
+            <button onClick={() => tasks.length === 0 && setIsTaskFormOpen(true)}
+              className="w-full mt-1 sm:mt-1.5 py-0.5 sm:py-1 rounded-full border text-center transition-colors shrink-0"
+              style={{
+                backgroundColor: themeColors.bgSecondary,
+                borderColor: themeColors.primary,
+                color: themeColors.textMuted
+              }}
+            >
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider block font-mono">
+                {tasks.length > 0 ? 'CONFIGURE' : 'ADD TASK'}
+              </span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* PANEL 1: ACTIVE SPRINT */}
-      <FrostedPanel
-        id="panel-sprint"
-        title="Active Mission: Neural Systems & UI Architecture"
-        icon={<Rocket className="w-4 h-4 text-white" />}
-        badge="Active Sprint"
-        isFrosted={frostedStates.sprint}
-        onToggleFrost={() => toggleFrost('sprint')}
-        isDark={isDark}
-      >
-        <div className="space-y-3 font-sans">
-          <p className={`text-xs leading-relaxed ${
-            isDark ? 'text-neutral-300' : 'text-neutral-700'
-          }`}>
-            Multi-tool sprint compiling research synthesis, architectural models, and collaborative decks with zero context switches.
-          </p>
-
-          <div className={`flex items-center flex-wrap gap-1.5 font-mono text-[11px] ${
-            isDark ? 'text-neutral-300' : 'text-neutral-700'
-          }`}>
-            <span className={`px-2 py-1 rounded border flex items-center gap-1.5 ${
-              isDark
-                ? 'bg-neutral-800 border-neutral-700 text-neutral-300'
-                : 'bg-neutral-200 border-neutral-400 text-neutral-700'
-            }`}>
-              <Database className={`w-3 h-3 ${
-                isDark ? 'text-neutral-400' : 'text-neutral-600'
-              }`} /> Notion Wiki [SYNCED]
-            </span>
-            <span className={`px-2 py-1 rounded border flex items-center gap-1.5 ${
-              isDark
-                ? 'bg-neutral-800 border-neutral-700 text-neutral-300'
-                : 'bg-neutral-200 border-neutral-400 text-neutral-700'
-            }`}>
-              <Cloud className={`w-3 h-3 ${
-                isDark ? 'text-neutral-400' : 'text-neutral-600'
-              }`} /> Google Drive [LIVE]
-            </span>
-            <span className={`px-2 py-1 rounded border flex items-center gap-1.5 ${
-              isDark
-                ? 'bg-neutral-800 border-neutral-700 text-neutral-300'
-                : 'bg-neutral-200 border-neutral-400 text-neutral-700'
-            }`}>
-              <Palette className={`w-3 h-3 ${
-                isDark ? 'text-neutral-400' : 'text-neutral-600'
-              }`} /> Canva Deck [SYNCED]
-            </span>
-          </div>
-
-          <div className={`flex items-center justify-between pt-2 border-t ${
-            isDark ? 'border-neutral-800' : 'border-neutral-300'
-          }`}>
-            <div className={`flex items-center gap-2 text-xs font-mono ${
-              isDark ? 'text-neutral-400' : 'text-neutral-600'
-            }`}>
-              <Clock className={`w-3.5 h-3.5 ${
-                isDark ? 'text-neutral-300' : 'text-neutral-700'
-              }`} />
-              <span>Session: 4.5h Logged Today</span>
-            </div>
-
-            <button
-              onClick={onOpenWorkspace}
-              className={`px-3.5 py-1.5 rounded font-bold text-xs transition-all flex items-center gap-1 ${
-                isDark
-                  ? 'bg-white text-black hover:bg-neutral-200'
-                  : 'bg-neutral-900 text-white hover:bg-neutral-800'
-              }`}
-            >
-              <span>Launch Workspace</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      </FrostedPanel>
-
-      {/* PANEL 2: PINNED PRIORITY ASSETS */}
-      <FrostedPanel
-        id="panel-pinned"
-        title={`Pinned Quick-Launch Shelf (${pinnedResources.length})`}
-        icon={<Pin className="w-4 h-4 text-white" />}
-        badge="Shelf"
-        isFrosted={frostedStates.pinned}
-        onToggleFrost={() => toggleFrost('pinned')}
-        isDark={isDark}
-        headerActions={
-          <button
-            onClick={onOpenLibrary}
-            className={`text-[11px] font-mono underline mr-1 ${
-              isDark
-                ? 'text-neutral-300 hover:text-white'
-                : 'text-neutral-700 hover:text-neutral-900'
-            }`}
+      {/* CUSTOMIZE PINNED CONTENT MODAL */}
+      {isCustomizePinnedOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setIsCustomizePinnedOpen(false)}
+        >
+          <div className="bg-card rounded-lg border p-4 max-w-sm w-full max-h-[80vh] overflow-y-auto"
+            style={{
+              backgroundColor: themeColors.cardBg,
+              borderColor: themeColors.cardBorder
+            }}
+            onClick={(e) => e.stopPropagation()}
           >
-            [ALL BOOKS] →
-          </button>
-        }
-      >
-        {pinnedResources.length === 0 ? (
-          <p className={`text-xs py-2 ${
-            isDark ? 'text-neutral-500' : 'text-neutral-600'
-          }`}>
-            No pinned assets. Click the pin button on any book or doc in your library to pin it here.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {pinnedResources.map((item: ResourceItem) => (
-              <div
-                key={item.id}
-                onClick={() => onOpenResource(item)}
-                className={`p-3 rounded border transition-all cursor-pointer flex items-center justify-between group ${
-                  isDark
-                    ? 'border-neutral-800 bg-neutral-950 hover:border-neutral-600'
-                    : 'border-neutral-300 bg-neutral-100 hover:border-neutral-400'
-                }`}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className={`w-8 h-8 rounded border flex items-center justify-center font-bold text-xs shrink-0 ${
-                    isDark
-                      ? 'border-neutral-700 bg-neutral-900 text-white'
-                      : 'border-neutral-300 bg-neutral-200 text-neutral-900'
-                  }`}>
-                    <BookOpen className="w-4 h-4" />
-                  </div>
-                  <div className="truncate">
-                    <span className={`font-bold text-xs group-hover:underline truncate block ${
-                      isDark ? 'text-white' : 'text-neutral-900'
-                    }`}>
-                      {item.title}
-                    </span>
-                    <span className={`text-[10px] font-mono truncate block mt-0.5 ${
-                      isDark ? 'text-neutral-400' : 'text-neutral-600'
-                    }`}>
-                      <span>{item.category}</span>
-                      <span className="mx-1">/</span>
-                      <span>{item.badge || 'Core'}</span>
-                    </span>
-                  </div>
-                </div>
-                <span className={`text-[11px] font-mono font-bold transition-colors ${
-                  isDark
-                    ? 'text-neutral-400 group-hover:text-white'
-                    : 'text-neutral-600 group-hover:text-neutral-900'
-                }`}>
-                  [OPEN]
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </FrostedPanel>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-sm" style={{ color: themeColors.textPrimary }}>Pin a Resource</h3>
+              <button onClick={() => setIsCustomizePinnedOpen(false)}>
+                <X className="w-4 h-4" style={{ color: themeColors.textMuted }} />
+              </button>
+            </div>
 
-      {/* PANEL 3: WELL-BEING & RECOVERY */}
-      <FrostedPanel
-        id="panel-wellness"
-        title="Circadian Boundary & Anti-Burnout Telemetry"
-        icon={<ShieldCheck className="w-4 h-4 text-white" />}
-        badge={telemetry.isStreakFrozen ? 'Frozen' : 'Active'}
-        isFrosted={frostedStates.wellness}
-        onToggleFrost={() => toggleFrost('wellness')}
-        isDark={isDark}
-      >
-        <div className="space-y-3 font-sans">
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className={`p-2.5 rounded border ${
-              isDark
-                ? 'bg-neutral-950 border-neutral-800'
-                : 'bg-neutral-100 border-neutral-300'
-            }`}>
-              <span className={`text-[10px] font-mono uppercase block ${
-                isDark ? 'text-neutral-400' : 'text-neutral-600'
-              }`}>Bedtime Boundary</span>
-              <span className={`font-bold text-sm font-mono ${
-                isDark ? 'text-white' : 'text-neutral-900'
-              }`}>23:00 - 07:00</span>
-            </div>
-            <div className={`p-2.5 rounded border ${
-              isDark
-                ? 'bg-neutral-950 border-neutral-800'
-                : 'bg-neutral-100 border-neutral-300'
-            }`}>
-              <span className={`text-[10px] font-mono uppercase block ${
-                isDark ? 'text-neutral-400' : 'text-neutral-600'
-              }`}>Burnout Shield</span>
-              <span className={`font-bold text-sm font-mono ${
-                isDark ? 'text-white' : 'text-neutral-900'
-              }`}>[PROTECTED]</span>
+            <div className="space-y-2">
+              {['res-streak-widget', 'res-flashcard-widget'].map((id) => {
+                const item = resolveItemData(id);
+                const isPinned = pinnedPool.includes(id);
+                return (
+                  <button key={id}
+                    onClick={() => isPinned ? handleRemovePin(id) : handleAddPin(id)}
+                    className="w-full p-2 rounded border text-left text-xs transition-all"
+                    style={{
+                      backgroundColor: isPinned ? `${themeColors.primary}20` : themeColors.bgSecondary,
+                      borderColor: isPinned ? themeColors.primary : themeColors.cardBorder,
+                      color: themeColors.textPrimary
+                    }}
+                  >
+                    <div className="font-bold">{item.title}</div>
+                    <div style={{ color: themeColors.textMuted, fontSize: '0.75rem' }}>{item.subtitle}</div>
+                  </button>
+                );
+              })}
+
+              {resources.slice(0, 5).map((resource) => {
+                const isPinned = pinnedPool.includes(resource.id);
+                return (
+                  <button key={resource.id}
+                    onClick={() => isPinned ? handleRemovePin(resource.id) : handleAddPin(resource.id)}
+                    className="w-full p-2 rounded border text-left text-xs transition-all"
+                    style={{
+                      backgroundColor: isPinned ? `${themeColors.primary}20` : themeColors.bgSecondary,
+                      borderColor: isPinned ? themeColors.primary : themeColors.cardBorder,
+                      color: themeColors.textPrimary
+                    }}
+                  >
+                    <div className="font-bold truncate">{resource.title}</div>
+                    <div style={{ color: themeColors.textMuted, fontSize: '0.75rem' }}>{resource.category}</div>
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <p className={`text-xs leading-relaxed ${
-            isDark ? 'text-neutral-400' : 'text-neutral-700'
-          }`}>
-            Atlauz monitors cognitive load and study streaks. When rest periods approach, non-essential notifications are muted to protect cognitive recovery.
-          </p>
         </div>
-      </FrostedPanel>
+      )}
 
-      {/* PANEL 4: CROSS-SUITE INTEGRATIONS */}
-      <FrostedPanel
-        id="panel-integrations"
-        title="Connected Workspace Integrations"
-        icon={<ExternalLink className="w-4 h-4 text-white" />}
-        badge="OAuth 2.0"
-        isFrosted={frostedStates.integrations}
-        onToggleFrost={() => toggleFrost('integrations')}
-        isDark={isDark}
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-xs">
-          {connectedApps.map(app => (
-            <div
-              key={app.id}
-              className={`p-2.5 rounded border flex items-center justify-between text-xs ${
-                isDark
-                  ? 'bg-neutral-950 border-neutral-800'
-                  : 'bg-neutral-100 border-neutral-300'
-              }`}
-            >
-              <div className="flex items-center gap-2 truncate">
-                <span className={`w-2 h-2 rounded-full shrink-0 ${
-                  app.connected
-                    ? isDark ? 'bg-white' : 'bg-neutral-900'
-                    : isDark ? 'bg-neutral-600' : 'bg-neutral-400'
-                }`} />
-                <span className={`font-semibold truncate ${
-                  isDark ? 'text-white' : 'text-neutral-900'
-                }`}>{app.name}</span>
+      {/* TASK INPUT MODAL */}
+      {isTaskFormOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setIsTaskFormOpen(false)}
+        >
+          <div className="bg-card rounded-lg border p-4 max-w-sm w-full"
+            style={{
+              backgroundColor: themeColors.cardBg,
+              borderColor: themeColors.cardBorder
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-bold text-sm mb-4" style={{ color: themeColors.textPrimary }}>Add a Task</h3>
+            <div className="space-y-2">
+              <input
+                autoFocus
+                type="text"
+                placeholder="Task description..."
+                value={taskInput}
+                onChange={(e) => setTaskInput(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    addTask(taskInput);
+                    setIsTaskFormOpen(false);
+                  }
+                }}
+                className="w-full px-3 py-2 rounded border text-sm"
+                style={{
+                  backgroundColor: themeColors.bgSecondary,
+                  borderColor: themeColors.primary,
+                  color: themeColors.textPrimary
+                }}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    addTask(taskInput);
+                    setIsTaskFormOpen(false);
+                  }}
+                  className="flex-1 px-3 py-2 rounded font-bold text-xs"
+                  style={{
+                    backgroundColor: themeColors.primary,
+                    color: '#ffffff'
+                  }}
+                >
+                  Add
+                </button>
+                <button
+                  onClick={() => setIsTaskFormOpen(false)}
+                  className="flex-1 px-3 py-2 rounded border text-xs"
+                  style={{
+                    backgroundColor: themeColors.bgSecondary,
+                    borderColor: themeColors.cardBorder,
+                    color: themeColors.textPrimary
+                  }}
+                >
+                  Cancel
+                </button>
               </div>
-              <span className={`text-[10px] ${
-                isDark ? 'text-neutral-400' : 'text-neutral-600'
-              }`}>
-                {app.connected ? '[LINKED]' : '[OFFLINE]'}
-              </span>
             </div>
-          ))}
+          </div>
         </div>
-      </FrostedPanel>
-
-      {/* ROLE-SPECIFIC PANELS */}
-      
-      {/* Student Role - Course & Assignment Tracking */}
-      {userRole === 'Student' && (
-        <FrostedPanel
-          id="panel-student-coursework"
-          title="Course Roadmap & Assignment Tracker"
-          icon={<BookOpen className="w-4 h-4 text-white" />}
-          badge="Active"
-          isFrosted={false}
-          onToggleFrost={() => toggleFrost('student-coursework')}
-          isDark={isDark}
-        >
-          <div className="space-y-3 font-sans text-xs">
-            <div className={`p-3 rounded border ${isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-neutral-100 border-neutral-300'}`}>
-              <div className={`text-[10px] font-mono uppercase mb-2 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>This Semester</div>
-              <div className={`flex items-center justify-between mb-2 ${isDark ? 'text-white' : 'text-neutral-900'}`}>
-                <span className="font-bold">4 Active Courses</span>
-                <span className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-neutral-800' : 'bg-neutral-200'}`}>8 Due This Week</span>
-              </div>
-              <div className={`w-full h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-neutral-800' : 'bg-neutral-300'}`}>
-                <div className={`h-full ${isDark ? 'bg-white' : 'bg-neutral-900'}`} style={{ width: '35%' }} />
-              </div>
-              <div className={`text-[10px] mt-2 ${isDark ? 'text-neutral-500' : 'text-neutral-600'}`}>35% through semester</div>
-            </div>
-          </div>
-        </FrostedPanel>
       )}
-
-      {/* Researcher Role - Research & Citation Management */}
-      {userRole === 'Researcher' && (
-        <FrostedPanel
-          id="panel-researcher-sources"
-          title="Research Matrix & Citation Hub"
-          icon={<Search className="w-4 h-4 text-white" />}
-          badge="Sources"
-          isFrosted={false}
-          onToggleFrost={() => toggleFrost('researcher-sources')}
-          isDark={isDark}
-        >
-          <div className="space-y-3 font-sans text-xs">
-            <div className={`p-3 rounded border ${isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-neutral-100 border-neutral-300'}`}>
-              <div className={`text-[10px] font-mono uppercase mb-2 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>Research Projects</div>
-              <div className={`space-y-2 ${isDark ? 'text-white' : 'text-neutral-900'}`}>
-                <div className="flex items-center justify-between">
-                  <span>Active Projects:</span>
-                  <span className="font-bold">3</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Total Sources Indexed:</span>
-                  <span className="font-bold">47</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Citation Standard:</span>
-                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded" style={{background: isDark ? '#2a2a2a' : '#e5e5e5'}}>APA 7th</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </FrostedPanel>
-      )}
-
-      {/* Educator Role - Class & Student Management */}
-      {userRole === 'Educator' && (
-        <FrostedPanel
-          id="panel-educator-cohorts"
-          title="Class Sections & Cohort Dashboard"
-          icon={<Presentation className="w-4 h-4 text-white" />}
-          badge="Classes"
-          isFrosted={false}
-          onToggleFrost={() => toggleFrost('educator-cohorts')}
-          isDark={isDark}
-        >
-          <div className="space-y-3 font-sans text-xs">
-            <div className={`p-3 rounded border ${isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-neutral-100 border-neutral-300'}`}>
-              <div className={`text-[10px] font-mono uppercase mb-2 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>Fall 2024 Sections</div>
-              <div className={`space-y-2 ${isDark ? 'text-white' : 'text-neutral-900'}`}>
-                <div className="flex items-center justify-between">
-                  <span>Active Classes:</span>
-                  <span className="font-bold">2</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Total Enrolled Students:</span>
-                  <span className="font-bold">58</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Pending Submissions:</span>
-                  <span className="font-bold text-orange-500">12</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </FrostedPanel>
-      )}
-    </div>
+    </>
   );
 });
 
-
-
+export default HubView;

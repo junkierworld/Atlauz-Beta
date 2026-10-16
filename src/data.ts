@@ -27,7 +27,6 @@ export const AVAILABLE_BADGES: ResourceBadge[] = [
 export const initialCompanion: CompanionState = {
   name: 'Companion',
   stateMachine: 'Serene_Balanced.json',
-  primaryFishId: null,
   fishes: [],
   headIndex: 1,
   bodyIndex: 1,
@@ -38,7 +37,7 @@ export const initialCompanion: CompanionState = {
   accentColor: '#888888',
   featuresEnabled: true,
   messagesEnabled: true,
-  customMessages: []
+  customMessages: ['', '', '']
 };
 
 // Empty telemetry for new users

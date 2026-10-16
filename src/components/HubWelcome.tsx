@@ -35,6 +35,9 @@ export const HubWelcome: React.FC<HubWelcomeProps> = ({
   const streakDays = telemetry?.streakDays || 0;
   const cognitiveVital = telemetry?.cognitiveVital || 0;
   const dailyProgress = telemetry?.dailyGoalProgress || 0;
+  
+  // Use firstName if available, otherwise fall back to username
+  const displayName = settings?.firstName || username;
 
   const handleDismiss = () => {
     setIsClosing(true);
@@ -84,7 +87,7 @@ export const HubWelcome: React.FC<HubWelcomeProps> = ({
                 isDark ? 'text-neutral-100' : 'text-neutral-950'
               }`}
             >
-              Welcome, <span className={isDark ? 'text-neutral-300' : 'text-neutral-700'}>{username}</span>
+              Welcome, <span className={isDark ? 'text-neutral-300' : 'text-neutral-700'}>{displayName}</span>
             </h1>
 
             {isFirstVisit && (

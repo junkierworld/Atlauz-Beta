@@ -7,22 +7,19 @@ export const INITIAL_STUDY_ROOMS: StudyRoom[] = [];
 export const INITIAL_PRACTICE_EXAMS: PracticeExam[] = [];
 
 export const INITIAL_COMPETENCY_VECTOR: CompetencyVector = {
-  domainScores: {},
-  dominantLearningStyle: 'Reading & Synthesis',
-  coreStrengths: [],
-  developmentAreas: []
+  computerScience: 0,
+  cognitiveScience: 0,
+  marineEcology: 0,
+  systemsArchitecture: 0,
+  researchMethodology: 0
 };
 
 export const INITIAL_DAILY_REFLECTIONS: DailyReflectionLog[] = [
   {
-    id: 'reflection-' + new Date().toISOString().slice(0, 10),
     date: new Date().toISOString().slice(0, 10),
-    moodScore: 0,
-    energyLevel: 0,
-    focusQuality: 0,
-    learningNote: '',
-    gratitudeEntry: '',
-    tomorrowGoal: '',
-    wellnessRating: 0
+    morningIntention: '',
+    eveningSummary: '',
+    focusHours: 0,
+    moodScore: 0
   }
 ];

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'motion/react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
-import { HubView } from './components/HubView';
+import { HubView } from './components/HubView.tsx';
 import { LibraryView } from './components/LibraryView';
 import { CompanionView } from './components/CompanionView';
 import { WorkspaceView } from './components/WorkspaceView';
@@ -31,6 +32,7 @@ import { PomodoroEyeBreakModal } from './components/tools/PomodoroEyeBreakModal'
 import { ThemePickerModal } from './components/ThemePickerModal';
 import { applyThemeToDocument, ATLAUZ_THEMES } from './themes';
 import { useOfflineSync } from './hooks/useOfflineSync';
+import { useAuthProfile } from './hooks/useAuthProfile';
 import { LearningPath, EarnedCertificate } from './types/learningPath';
 import { INITIAL_LEARNING_PATHS } from './data/initialLearningPaths';
 import {
@@ -71,10 +73,15 @@ import {
   clearUserSession,
   STORAGE_KEYS
 } from './utils/storage';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { RoleSelectionPage } from './pages/RoleSelectionPage';
+import { ProfileSetupPage } from './pages/ProfileSetupPage';
 
-export default function App() {
-  // Debug: Log that App component is rendering
-  console.log('🚀 App component mounted');
+// Dashboard component wraps the main app content
+function Dashboard() {
+  // Debug: Log that Dashboard component is rendering
+  console.log('🚀 Dashboard component mounted');
   
   const [activeTab, setActiveTab] = useState<'hub' | 'library' | 'workspace' | 'companion' | 'profile'>('hub');
   const [companion, setCompanion] = useState<CompanionState>(() =>
@@ -88,9 +95,6 @@ export default function App() {
   const [settings, setSettings] = useState<UserAccountSettings>(() =>
     loadStoredData(STORAGE_KEYS.SETTINGS, initialSettings)
   );
-  
-  console.log('Current settings:', settings);
-  console.log('Theme:', settings?.theme);
   const [learningPaths, setLearningPaths] = useState<LearningPath[]>(() =>
     loadStoredData(STORAGE_KEYS.LEARNING_PATHS, INITIAL_LEARNING_PATHS)
   );
@@ -288,6 +292,12 @@ export default function App() {
   const handleUpdateSettings = (updated: Partial<UserAccountSettings>) => {
     setSettings(prev => ({ ...prev, ...updated }));
   };
+
+  // Sync authenticated user's profile from Supabase
+  useAuthProfile({
+    settings,
+    onUpdateSettings: handleUpdateSettings
+  });
 
   const handleToggleTheme = () => {
     const nextTheme = settings.theme === 'dark' ? 'light' : 'dark';
@@ -581,7 +591,7 @@ export default function App() {
         onLogout={() => {
           // Clear user session (NOT learning data) and redirect to home
           clearUserSession();
-          window.location.href = '/';
+          window.location.href = '/login';
         }}
       />
 
@@ -593,8 +603,8 @@ export default function App() {
             : 'flex flex-col px-2 sm:px-4 pt-16 sm:pt-24 pb-32 sm:pb-40'
         }`}
         style={{
-          minHeight: isDistractionFree ? '100dvh' : 'auto',
-          maxHeight: isDistractionFree ? '100dvh' : 'none',
+          minHeight: '100dvh',
+          maxHeight: '100dvh',
           overflowY: 'auto',
           overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
@@ -604,7 +614,8 @@ export default function App() {
           userSelect: 'auto',
           width: '100%',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          boxSizing: 'border-box'
         }}
       >
         {activeTab === 'hub' && (
@@ -616,7 +627,11 @@ export default function App() {
             onOpenResource={handleOpenResource}
             onCreateResourceClick={() => setIsCreateModalOpen(true)}
             onOpenLibrary={() => setActiveTab('library')}
-            onOpenWorkspace={() => setActiveTab('workspace')}
+            onOpenWorkspace={(mode?: 'dominant' | 'pile' | 'bento' | 'collab') => {
+              setActiveTab('workspace');
+              // Mode can be 'dominant', 'pile', 'bento', 'collab'
+              // Store it in state if needed for workspace to know which mode to load
+            }}
             onOpenFishing={() => setIsFishingModalOpen(true)}
             onOpenProfile={() => setActiveTab('profile')}
             onShowToast={showToast}
@@ -952,4 +967,23 @@ export default function App() {
       </div>
     );
   }
+}
+
+// Main App Component with Routing
+export default function App() {
+  return (
+    <Routes>
+      {/* Root redirect */}
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      
+      {/* Auth Routes */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/select-role" element={<RoleSelectionPage />} />
+      <Route path="/complete-profile" element={<ProfileSetupPage />} />
+      
+      {/* Dashboard Routes - Protected */}
+      <Route path="/*" element={<Dashboard />} />
+    </Routes>
+  );
 }

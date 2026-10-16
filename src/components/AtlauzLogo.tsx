@@ -10,6 +10,7 @@ interface AtlauzLogoProps {
   glow?: boolean;
   eyeColor?: string;
   textColor?: string;
+  isDark?: boolean;
 }
 
 export const AtlauzLogo: React.FC<AtlauzLogoProps> = ({
@@ -18,8 +19,11 @@ export const AtlauzLogo: React.FC<AtlauzLogoProps> = ({
   animated = true,
   className = '',
   eyeColor = '#ffffff',
-  textColor = '#ffffff'
+  textColor,
+  isDark = true
 }) => {
+  // Use isDark to determine text color if not explicitly provided
+  const finalTextColor = textColor || (isDark ? '#ffffff' : '#171717');
   // Dimension resolver
   const getDimensions = () => {
     if (typeof size === 'number') {
@@ -106,12 +110,12 @@ export const AtlauzLogo: React.FC<AtlauzLogoProps> = ({
           <svg viewBox="0 0 60 60" className="w-full h-full" fill="none">
             <path
               d="M 12 50 L 30 12 L 48 50"
-              stroke="#ffffff"
+              stroke={finalTextColor}
               strokeWidth="7"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
-            <circle cx="30" cy="34" r="5" fill="#ffffff" />
+            <circle cx="30" cy="34" r="5" fill={finalTextColor} />
           </svg>
         </div>
         <span className="text-white text-sm -mt-0.5">tl</span>
@@ -140,7 +144,7 @@ export const AtlauzLogo: React.FC<AtlauzLogoProps> = ({
         <g id="letterA">
           <path
             d="M 12 52 L 32 14 L 52 52"
-            stroke="#ffffff"
+            stroke={finalTextColor}
             strokeWidth="7"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -167,14 +171,14 @@ export const AtlauzLogo: React.FC<AtlauzLogoProps> = ({
         <g id="letterT">
           <path
             d="M 72 20 L 72 44 C 72 50, 77 52, 82 50"
-            stroke="#ffffff"
+            stroke={finalTextColor}
             strokeWidth="6"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
           <path
             d="M 64 30 L 80 30"
-            stroke="#ffffff"
+            stroke={finalTextColor}
             strokeWidth="6"
             strokeLinecap="round"
           />
@@ -184,7 +188,7 @@ export const AtlauzLogo: React.FC<AtlauzLogoProps> = ({
         <g id="letterL">
           <path
             d="M 94 14 L 94 50"
-            stroke="#ffffff"
+            stroke={finalTextColor}
             strokeWidth="6"
             strokeLinecap="round"
           />
@@ -222,7 +226,7 @@ export const AtlauzLogo: React.FC<AtlauzLogoProps> = ({
         <g id="letterZ">
           <path
             d="M 182 26 L 210 26 L 184 52 L 212 52"
-            stroke="#ffffff"
+            stroke={finalTextColor}
             strokeWidth="6"
             strokeLinecap="round"
             strokeLinejoin="round"

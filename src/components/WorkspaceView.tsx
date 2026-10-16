@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Sparkles,
@@ -36,7 +36,7 @@ import {
   Sliders,
   Users
 } from 'lucide-react';
-import { ProjectItem, ResourceItem, FocusCardItem, FocusCardPurpose, UserRole, CollaborativeBentoTile } from '../types';
+import { ProjectItem, ResourceItem, FocusCardItem, FocusCardPurpose, UserRole, CollaborativeBentoTile, UserAccountSettings } from '../types';
 import { initialCollaborativeBentoTiles } from '../data';
 import { FULLER_WORKSPACE_TOOL_TAB_COLORS } from '../themes';
 import { FocusShiftIcon } from './FocusShiftIcon';
@@ -44,7 +44,8 @@ import { FocusCardRenderer } from './FocusCardRenderer';
 import { FocusAddCardModal } from './FocusAddCardModal';
 import { RoboticCardsReorganizer, RoboticPhase } from './RoboticCardsReorganizer';
 import { FocusTransitionIntro } from './FocusTransitionIntro';
-import { CollaborativeBentoView } from './CollaborativeBentoView';
+// Lazy-load CollaborativeBentoView to defer 50KB code split
+const CollaborativeBentoView = lazy(() => import('./CollaborativeBentoView').then(m => ({ default: m.CollaborativeBentoView })));
 import { SkeletonLoader } from './SkeletonLoader';
 import { roboticSound } from '../utils/roboticSound';
 import { isLightBackground, getAdaptiveTextColor } from '../utils/contrast';
@@ -59,7 +60,7 @@ interface WorkspaceViewProps {
   userRole?: UserRole;
   collabBentoTiles?: CollaborativeBentoTile[];
   onUpdateCollabBentoTiles?: (tiles: CollaborativeBentoTile[]) => void;
-  settings?: { theme?: 'light' | 'dark' };
+  settings?: UserAccountSettings;
 }
 
 // 8 Tabs utilizing Monochrome Prototype Palette (Standard human working-memory chunking):
@@ -607,13 +608,13 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             </div>
           </div>
 
-          {/* Action strip: 2x2 Compact Mode Grid + Add Tab */}
-          <div className="flex items-center gap-2 font-mono shrink-0 self-stretch sm:self-auto justify-between sm:justify-end">
-            {/* View Mode Selector: 2 Columns x 2 Rows Compact Grid */}
+          {/* Action strip: Full-Width Mobile Grid (4 cols) + Compact Desktop (2x2 grid) + Add Tab */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 font-mono shrink-0 self-stretch sm:self-auto w-full sm:w-auto">
+            {/* View Mode Selector: Full-width 4 columns on mobile, 2x2 grid on tablet+ */}
             <div
               role="tablist"
               aria-label="Workspace layout view modes"
-              className="grid grid-cols-2 gap-1 bg-neutral-950 p-1 rounded-lg border border-neutral-800 text-xs"
+              className="grid grid-cols-4 sm:grid-cols-2 gap-1 bg-neutral-950 p-1 rounded-lg border border-neutral-800 text-xs w-full sm:w-auto"
             >
               <button
                 role="tab"
@@ -622,7 +623,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                   handleSwitchViewMode('dominant');
                   onShowToast('Focus Shift View (Dominant + Dock)');
                 }}
-                className={`min-touch-target px-2.5 py-1 rounded transition-all flex items-center justify-center gap-1.5 text-xs ${
+                className={`min-touch-target px-2.5 py-1.5 rounded transition-all flex flex-col sm:flex-row items-center justify-center gap-1 text-xs font-semibold ${
                   viewMode === 'dominant'
                     ? 'bg-white text-black font-bold ring-1 ring-white'
                     : 'text-neutral-400 hover:text-white'
@@ -630,7 +631,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 title="Focus: Single dominant card with compact tab dock"
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>Focus</span>
+                <span className="hidden sm:inline">Focus</span>
               </button>
 
               <button
@@ -640,7 +641,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                   handleSwitchViewMode('pile');
                   onShowToast('Browser Efficiency Stacked Card Pile');
                 }}
-                className={`min-touch-target px-2.5 py-1 rounded transition-all flex items-center justify-center gap-1.5 text-xs ${
+                className={`min-touch-target px-2.5 py-1.5 rounded transition-all flex flex-col sm:flex-row items-center justify-center gap-1 text-xs font-semibold ${
                   viewMode === 'pile'
                     ? 'bg-white text-black font-bold ring-1 ring-white'
                     : 'text-neutral-400 hover:text-white'
@@ -648,7 +649,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 title="Pile: Stacked deck with hover elevation and drag reordering"
               >
                 <Square className="w-3.5 h-3.5" />
-                <span>Pile</span>
+                <span className="hidden sm:inline">Pile</span>
               </button>
 
               <button
@@ -658,7 +659,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                   handleSwitchViewMode('bento');
                   onShowToast('Adaptive Bento Layout');
                 }}
-                className={`min-touch-target px-2.5 py-1 rounded transition-all flex items-center justify-center gap-1.5 text-xs ${
+                className={`min-touch-target px-2.5 py-1.5 rounded transition-all flex flex-col sm:flex-row items-center justify-center gap-1 text-xs font-semibold ${
                   viewMode === 'bento' && bentoSubTab === 'adaptive'
                     ? 'bg-white text-black font-bold ring-1 ring-white'
                     : 'text-neutral-400 hover:text-white'
@@ -666,7 +667,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 title="Bento: Modular tile layout"
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
-                <span>Bento</span>
+                <span className="hidden sm:inline">Bento</span>
               </button>
 
               <button
@@ -676,7 +677,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                   handleSwitchViewMode('collab');
                   onShowToast('Shared Bento Workspaces');
                 }}
-                className={`min-touch-target px-2.5 py-1 rounded transition-all flex items-center justify-center gap-1 text-xs ${
+                className={`min-touch-target px-2.5 py-1.5 rounded transition-all flex flex-col sm:flex-row items-center justify-center gap-1 text-xs font-semibold ${
                   viewMode === 'collab' || (viewMode === 'bento' && bentoSubTab === 'collaborative')
                     ? 'bg-white text-black font-bold ring-1 ring-white'
                     : 'text-neutral-400 hover:text-white'
@@ -684,7 +685,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 title="Collab: Shared real-time CRDT tiles"
               >
                 <Users className="w-3.5 h-3.5" />
-                <span>Collab</span>
+                <span className="hidden sm:inline">Collab</span>
               </button>
             </div>
 
@@ -692,7 +693,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             {cards.length < 8 && (
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="min-touch-target px-3 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all"
+                className="min-touch-target px-3 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all w-full sm:w-auto"
                 title="Add Focus Tab (Up to 8 tabs)"
               >
                 <Plus className="w-3.5 h-3.5 text-white" />
@@ -851,12 +852,14 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
           </div>
 
           {bentoSubTab === 'collaborative' ? (
-            <CollaborativeBentoView
-              tiles={collabBentoTiles || initialCollaborativeBentoTiles}
-              onUpdateTiles={handleUpdateCollabTiles}
-              onShowToast={onShowToast}
-              isDistractionFree={isDistractionFree}
-            />
+            <Suspense fallback={<SkeletonLoader type="bento" count={3} />}>
+              <CollaborativeBentoView
+                tiles={collabBentoTiles || initialCollaborativeBentoTiles}
+                onUpdateTiles={handleUpdateCollabTiles}
+                onShowToast={onShowToast}
+                isDistractionFree={isDistractionFree}
+              />
+            </Suspense>
           ) : (
             /* Bento Grid Container */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4">
@@ -884,6 +887,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                     card={dominantCard}
                     isDominant={true}
                     isMobileLandscape={isLandscape}
+                    canRemove={true}
                     onUpdateCard={handleUpdateCard}
                     onRemoveCard={handleRemoveCard}
                     onChangePurpose={handleChangePurpose}
@@ -1105,12 +1109,14 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
       {/* ================================================================= */}
       {!isLayoutTransitioning && viewMode === 'collab' && (
         <div className="w-full flex-1 min-h-0 overflow-y-auto space-y-4 no-scrollbar pb-6 animate-fade-in">
-          <CollaborativeBentoView
-            tiles={collabBentoTiles || initialCollaborativeBentoTiles}
-            onUpdateTiles={handleUpdateCollabTiles}
-            onShowToast={onShowToast}
-            isDistractionFree={isDistractionFree}
-          />
+          <Suspense fallback={<SkeletonLoader type="bento" count={3} />}>
+            <CollaborativeBentoView
+              tiles={collabBentoTiles || initialCollaborativeBentoTiles}
+              onUpdateTiles={handleUpdateCollabTiles}
+              onShowToast={onShowToast}
+              isDistractionFree={isDistractionFree}
+            />
+          </Suspense>
         </div>
       )}
 
@@ -1450,6 +1456,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({
               card={dominantCard}
               isDominant={true}
               isMobileLandscape={isLandscape}
+              canRemove={true}
               onUpdateCard={handleUpdateCard}
               onRemoveCard={handleRemoveCard}
               onChangePurpose={handleChangePurpose}

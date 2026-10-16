@@ -4,7 +4,7 @@ import {
   Check,
   Gift
 } from 'lucide-react';
-import { FishCompanion, CognitiveTelemetry } from '../types';
+import { FishCompanion, CognitiveTelemetry, UserAccountSettings } from '../types';
 import { generateRandomFish } from '../utils/fishSpecies';
 import { AtlauzFish } from './AtlauzFish';
 
@@ -16,7 +16,7 @@ interface FishingReelModalProps {
   onCatchNewFish: (fish: FishCompanion) => void;
   onAddBonusStreaks: (amount: number) => void;
   onShowToast: (msg: string) => void;
-  settings?: { theme?: 'light' | 'dark' };
+  settings?: UserAccountSettings;
 }
 
 type FishingStage = 'ready' | 'casting' | 'reeling' | 'can_sealed' | 'revealed';
@@ -136,7 +136,7 @@ export const FishingReelModal: React.FC<FishingReelModalProps> = ({
       {/* Backdrop */}
       <div
         onClick={() => stage !== 'casting' && stage !== 'reeling' && onClose()}
-        className={`fixed inset-0 backdrop-blur-sm transition-opacity ${isDark ? 'bg-black/85' : 'bg-white/60'}`}
+        className={`fixed inset-0 backdrop-blur-md transition-opacity bg-black/85`}
       />
 
       {/* Main Modal Frame */}

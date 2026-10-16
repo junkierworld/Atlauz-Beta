@@ -73,4 +73,32 @@ export const importUserDataBackup = (jsonString: string): boolean => {
   }
 };
 
+/**
+ * Clear user session data WITHOUT destroying learning data.
+ * Preserves: resources, learning paths, certificates, companion, telemetry
+ * Clears: active session, auth tokens, temporary workspace state
+ * 
+ * This prevents data loss on logout while cleaning up session state.
+ */
+export const clearUserSession = (): void => {
+  try {
+    // Clear only session/auth-related keys, NOT user learning data
+    localStorage.removeItem(STORAGE_KEYS.ACTIVE_SESSION);
+    localStorage.removeItem(STORAGE_KEYS.WORKSPACE_TABS);
+    
+    // Reset settings to defaults (keeps theme preference)
+    const currentSettings = loadStoredData(STORAGE_KEYS.SETTINGS, {});
+    const clearedSettings = {
+      ...currentSettings,
+      isLocked: false,
+      // Keep theme and intensity, clear other session state
+    };
+    saveStoredData(STORAGE_KEYS.SETTINGS, clearedSettings);
+    
+    console.log('[Atlauz Storage] User session cleared (user data preserved)');
+  } catch (err) {
+    console.error('[Atlauz Storage] Failed to clear user session:', err);
+  }
+};
+
 export { STORAGE_KEYS };

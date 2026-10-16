@@ -63,8 +63,8 @@ export const FrostedPanel: React.FC<FrostedPanelProps> = ({
             ? 'glass-frosted-idle p-3 sm:p-3.5 cursor-pointer select-none bg-neutral-900/50 border border-neutral-800'
             : 'glass-frosted-idle p-3 sm:p-3.5 cursor-pointer select-none bg-neutral-100/50 border border-neutral-300'
           : isDark
-          ? 'glass-defrost-active p-4 sm:p-5 bg-neutral-900 border border-neutral-800'
-          : 'glass-defrost-active p-4 sm:p-5 bg-neutral-50 border border-neutral-300'
+          ? 'glass-defrost-active p-4 sm:p-5 bg-neutral-900/40 border border-neutral-800'
+          : 'glass-defrost-active p-4 sm:p-5 bg-neutral-50/40 border border-neutral-300'
       } ${className}`}
       title={isFrosted ? 'Double-tap or long-press to defrost' : 'Double-tap to frost'}
     >
@@ -140,8 +140,8 @@ export const FrostedPanel: React.FC<FrostedPanelProps> = ({
                   ? 'bg-neutral-900 text-neutral-400 hover:text-white border-neutral-800 hover:border-neutral-700'
                   : 'bg-neutral-100 text-neutral-600 hover:text-neutral-900 border-neutral-300 hover:border-neutral-400'
                 : isDark
-                ? 'bg-white text-black hover:bg-neutral-200 border-white'
-                : 'bg-neutral-900 text-white hover:bg-neutral-800 border-neutral-900'
+                ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-100 border border-neutral-700 hover:border-neutral-600'
+                : 'bg-neutral-200 hover:bg-neutral-300 text-neutral-950 border-neutral-400 hover:border-neutral-500'
             }`}
             title={isFrosted ? 'Click, double-tap, or long-press to defrost' : 'Click to frost into compact title'}
           >
@@ -153,9 +153,9 @@ export const FrostedPanel: React.FC<FrostedPanelProps> = ({
               </>
             ) : (
               <>
-                <Eye className={`w-3 h-3 ${isDark ? 'text-black' : 'text-white'}`} />
+                <Eye className={`w-3 h-3 ${isDark ? 'text-neutral-100' : 'text-neutral-950'}`} />
                 <span className="hidden sm:inline">DEFROSTED</span>
-                <ChevronDown className={`w-3 h-3 ${isDark ? 'text-black' : 'text-white'}`} />
+                <ChevronDown className={`w-3 h-3 ${isDark ? 'text-neutral-100' : 'text-neutral-950'}`} />
               </>
             )}
           </button>

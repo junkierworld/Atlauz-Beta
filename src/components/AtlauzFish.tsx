@@ -1,6 +1,7 @@
 import React from 'react';
 
 export interface AtlauzFishProps {
+  id?: string;
   headIndex?: number;
   bodyIndex?: number;
   tailIndex?: number;
@@ -17,7 +18,8 @@ export interface AtlauzFishProps {
   showName?: boolean;
 }
 
-export const AtlauzFish: React.FC<AtlauzFishProps> = ({
+export const AtlauzFishComponent: React.FC<AtlauzFishProps> = ({
+  id,
   headIndex = 1,
   bodyIndex = 1,
   tailIndex = 1,
@@ -410,3 +412,15 @@ export const AtlauzFish: React.FC<AtlauzFishProps> = ({
     </div>
   );
 };
+
+// Memoize to prevent unnecessary re-renders when fish props haven't changed
+export const AtlauzFish = React.memo(AtlauzFishComponent, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if key animation props change
+  return (
+    prevProps.id === nextProps.id &&
+    prevProps.headIndex === nextProps.headIndex &&
+    prevProps.bodyIndex === nextProps.bodyIndex &&
+    prevProps.tailIndex === nextProps.tailIndex &&
+    prevProps.eyesIndex === nextProps.eyesIndex
+  );
+});

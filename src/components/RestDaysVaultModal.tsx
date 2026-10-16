@@ -14,7 +14,7 @@ import {
   ArrowRight,
   RotateCcw
 } from 'lucide-react';
-import { RestDayVaultEntry, CognitiveTelemetry } from '../types';
+import { RestDayVaultEntry, CognitiveTelemetry, UserAccountSettings } from '../types';
 
 interface RestDaysVaultModalProps {
   isOpen: boolean;
@@ -24,7 +24,7 @@ interface RestDaysVaultModalProps {
   onToggleStreakFreeze: () => void;
   onAddRestDay: (entry: RestDayVaultEntry) => void;
   onShowToast: (msg: string) => void;
-  settings?: { theme?: 'light' | 'dark' };
+  settings?: UserAccountSettings;
 }
 
 export const RestDaysVaultModal: React.FC<RestDaysVaultModalProps> = ({

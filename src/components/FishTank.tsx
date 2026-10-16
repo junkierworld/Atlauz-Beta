@@ -8,7 +8,7 @@ import {
   Droplets,
   Star
 } from 'lucide-react';
-import { FishCompanion, CognitiveTelemetry, CompanionState } from '../types';
+import { FishCompanion, CognitiveTelemetry, CompanionState, UserAccountSettings } from '../types';
 import { AtlauzFish } from './AtlauzFish';
 
 interface FishTankProps {
@@ -20,7 +20,7 @@ interface FishTankProps {
   onSetPrimaryFish: (fishId: string) => void;
   onOpenFishing: () => void;
   onShowToast: (msg: string) => void;
-  settings?: { theme?: 'light' | 'dark' };
+  settings?: UserAccountSettings;
 }
 
 interface FishPhysics {
@@ -53,7 +53,7 @@ interface FloatingHeart {
   y: number;
 }
 
-export const FishTank: React.FC<FishTankProps> = ({
+const FishTankComponent: React.FC<FishTankProps> = ({
   fishes,
   primaryFishId,
   telemetry,
@@ -720,3 +720,5 @@ export const FishTank: React.FC<FishTankProps> = ({
     </div>
   );
 };
+
+export const FishTank = React.memo(FishTankComponent);

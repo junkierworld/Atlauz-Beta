@@ -190,6 +190,30 @@ export interface ConnectedApp {
 
 export type UserRole = 'Student' | 'Researcher' | 'Educator';
 
+// Student Courses & Assignments
+export interface StudentCourse {
+  id: string;
+  name: string;
+  code?: string;
+  progress: number; // 0-100
+  totalAssignments: number;
+  completedAssignments?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StudentAssignment {
+  id: string;
+  title: string;
+  courseId: string;
+  courseName: string;
+  dueDate: string; // ISO string
+  status: 'pending' | 'due-soon' | 'overdue' | 'submitted' | 'graded';
+  priority?: 'low' | 'medium' | 'high';
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type PersonalityType =
   | 'Analytical & Methodical'
   | 'Inquisitive & Exploratory'

@@ -31,7 +31,7 @@ import {
   Sparkles,
   ArrowRight
 } from 'lucide-react';
-import { ResourceItem, ResourceType, UserRole, LibraryTaskItem } from '../types';
+import { ResourceItem, ResourceType, UserRole, LibraryTaskItem, UserAccountSettings } from '../types';
 import { BadgeSelector } from './BadgeSelector';
 import { SkeletonLoader } from './SkeletonLoader';
 import { AVAILABLE_BADGES, initialLibraryTasks } from '../data';
@@ -48,7 +48,7 @@ interface LibraryViewProps {
   onUpdateResource?: (resourceId: string, updated: Partial<ResourceItem>) => void;
   onShowToast: (msg: string | { message: string; type?: 'info' | 'success' | 'warning' | 'error'; onUndo?: () => void; undoLabel?: string }) => void;
   userRole?: UserRole;
-  settings?: { theme?: 'light' | 'dark' };
+  settings?: UserAccountSettings;
 }
 
 const PRESET_COLORS = [
@@ -73,9 +73,9 @@ export const LibraryView = React.memo(function LibraryViewComponent({
   onUpdateResource,
   onShowToast,
   userRole = 'Student',
-  settings = { theme: 'dark' }
+  settings
 }: LibraryViewProps) {
-  const isDark = settings.theme === 'dark';
+  const isDark = settings?.theme && !settings.theme.includes('light');
   const [activeViewTab, setActiveViewTab] = useState<'bookshelf' | 'notepad_tasks'>('bookshelf');
   const [activeTypeFilter, setActiveTypeFilter] = useState<string>('all');
   const [isShelfLoading, setIsShelfLoading] = useState<boolean>(false);
@@ -1070,9 +1070,7 @@ export const LibraryView = React.memo(function LibraryViewComponent({
       {/* EDIT RESOURCE MODAL */}
       {/* ========================================================================= */}
       {editingResource && (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
-          isDark ? 'bg-black/80' : 'bg-white/60'
-        }`}>
+        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md`}>
           <div className={`w-full max-w-lg rounded-lg p-5 shadow-2xl font-sans border ${
             isDark
               ? 'bg-neutral-900 border-neutral-700 text-white'

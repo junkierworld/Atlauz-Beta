@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Rocket,
   Activity,
@@ -11,11 +11,14 @@ import {
   Plus,
   Clock,
   ShieldCheck,
-  ExternalLink
+  ExternalLink,
+  Search,
+  Presentation
 } from 'lucide-react';
-import { CognitiveTelemetry, ConnectedApp, ResourceItem, CompanionState, UserRole } from '../types';
+import { CognitiveTelemetry, ConnectedApp, ResourceItem, CompanionState, UserRole, UserAccountSettings } from '../types';
 import { FrostedPanel } from './FrostedPanel';
 import { AtlauzLogo } from './AtlauzLogo';
+import { HubWelcome } from './HubWelcome';
 
 interface HubViewProps {
   telemetry: CognitiveTelemetry;
@@ -30,7 +33,7 @@ interface HubViewProps {
   onOpenProfile?: () => void;
   onShowToast: (msg: string) => void;
   userRole?: UserRole;
-  settings?: { theme?: 'light' | 'dark' };
+  settings?: UserAccountSettings;
 }
 
 export const HubView = React.memo(function HubViewComponent({
@@ -46,9 +49,24 @@ export const HubView = React.memo(function HubViewComponent({
   onOpenProfile,
   onShowToast,
   userRole = 'Student',
-  settings = { theme: 'dark' }
+  settings
 }: HubViewProps) {
-  const isDark = settings.theme === 'dark';
+  const isDark = settings?.theme && !settings.theme.includes('light');
+  
+  // Track welcome card dismissal in session
+  const [dismissedWelcome, setDismissedWelcome] = useState(false);
+  
+  // Memoize filtered resources to prevent O(n) scans on every render
+  const pinnedResources = useMemo(
+    () => resources.filter(r => r.isPinned).slice(0, 4),
+    [resources]
+  );
+  
+  const recentResources = useMemo(
+    () => resources.slice(0, 6),
+    [resources]
+  );
+  
   // Frosted states map: when frosted, panel minimizes to ONLY show the title
   const [frostedStates, setFrostedStates] = useState<{ [key: string]: boolean }>({
     sprint: false,       // Defrosted by default
@@ -64,10 +82,21 @@ export const HubView = React.memo(function HubViewComponent({
     onShowToast(nextState ? 'Panel Concealed to title' : 'Panel Revealed with full details');
   };
 
-  const pinnedResources = resources.filter(r => r.isPinned);
-
+  // Remove the line that recalculates pinnedResources here since we memoized it above
+  
   return (
     <div className="flex flex-col w-full max-w-3xl mx-auto space-y-3.5 animate-fade-in pb-20 font-sans">
+      {/* Hub Welcome Hero Card - Animated Introduction */}
+      {!dismissedWelcome && (
+        <HubWelcome
+          username={settings?.username || 'Learner'}
+          telemetry={telemetry}
+          settings={settings}
+          isFirstVisit={false}
+          onDismiss={() => setDismissedWelcome(true)}
+        />
+      )}
+
       {/* Top Prototype State Bar */}
       <div className={`flex items-center justify-between px-3 py-1.5 rounded border text-xs ${
         isDark
@@ -412,7 +441,7 @@ export const HubView = React.memo(function HubViewComponent({
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {pinnedResources.map(item => (
+            {pinnedResources.map((item: ResourceItem) => (
               <div
                 key={item.id}
                 onClick={() => onOpenResource(item)}
@@ -542,6 +571,104 @@ export const HubView = React.memo(function HubViewComponent({
           ))}
         </div>
       </FrostedPanel>
+
+      {/* ROLE-SPECIFIC PANELS */}
+      
+      {/* Student Role - Course & Assignment Tracking */}
+      {userRole === 'Student' && (
+        <FrostedPanel
+          id="panel-student-coursework"
+          title="Course Roadmap & Assignment Tracker"
+          icon={<BookOpen className="w-4 h-4 text-white" />}
+          badge="Active"
+          isFrosted={false}
+          onToggleFrost={() => toggleFrost('student-coursework')}
+          isDark={isDark}
+        >
+          <div className="space-y-3 font-sans text-xs">
+            <div className={`p-3 rounded border ${isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-neutral-100 border-neutral-300'}`}>
+              <div className={`text-[10px] font-mono uppercase mb-2 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>This Semester</div>
+              <div className={`flex items-center justify-between mb-2 ${isDark ? 'text-white' : 'text-neutral-900'}`}>
+                <span className="font-bold">4 Active Courses</span>
+                <span className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-neutral-800' : 'bg-neutral-200'}`}>8 Due This Week</span>
+              </div>
+              <div className={`w-full h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-neutral-800' : 'bg-neutral-300'}`}>
+                <div className={`h-full ${isDark ? 'bg-white' : 'bg-neutral-900'}`} style={{ width: '35%' }} />
+              </div>
+              <div className={`text-[10px] mt-2 ${isDark ? 'text-neutral-500' : 'text-neutral-600'}`}>35% through semester</div>
+            </div>
+          </div>
+        </FrostedPanel>
+      )}
+
+      {/* Researcher Role - Research & Citation Management */}
+      {userRole === 'Researcher' && (
+        <FrostedPanel
+          id="panel-researcher-sources"
+          title="Research Matrix & Citation Hub"
+          icon={<Search className="w-4 h-4 text-white" />}
+          badge="Sources"
+          isFrosted={false}
+          onToggleFrost={() => toggleFrost('researcher-sources')}
+          isDark={isDark}
+        >
+          <div className="space-y-3 font-sans text-xs">
+            <div className={`p-3 rounded border ${isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-neutral-100 border-neutral-300'}`}>
+              <div className={`text-[10px] font-mono uppercase mb-2 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>Research Projects</div>
+              <div className={`space-y-2 ${isDark ? 'text-white' : 'text-neutral-900'}`}>
+                <div className="flex items-center justify-between">
+                  <span>Active Projects:</span>
+                  <span className="font-bold">3</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Total Sources Indexed:</span>
+                  <span className="font-bold">47</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Citation Standard:</span>
+                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded" style={{background: isDark ? '#2a2a2a' : '#e5e5e5'}}>APA 7th</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </FrostedPanel>
+      )}
+
+      {/* Educator Role - Class & Student Management */}
+      {userRole === 'Educator' && (
+        <FrostedPanel
+          id="panel-educator-cohorts"
+          title="Class Sections & Cohort Dashboard"
+          icon={<Presentation className="w-4 h-4 text-white" />}
+          badge="Classes"
+          isFrosted={false}
+          onToggleFrost={() => toggleFrost('educator-cohorts')}
+          isDark={isDark}
+        >
+          <div className="space-y-3 font-sans text-xs">
+            <div className={`p-3 rounded border ${isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-neutral-100 border-neutral-300'}`}>
+              <div className={`text-[10px] font-mono uppercase mb-2 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>Fall 2024 Sections</div>
+              <div className={`space-y-2 ${isDark ? 'text-white' : 'text-neutral-900'}`}>
+                <div className="flex items-center justify-between">
+                  <span>Active Classes:</span>
+                  <span className="font-bold">2</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Total Enrolled Students:</span>
+                  <span className="font-bold">58</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Pending Submissions:</span>
+                  <span className="font-bold text-orange-500">12</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </FrostedPanel>
+      )}
     </div>
   );
 });
+
+
+

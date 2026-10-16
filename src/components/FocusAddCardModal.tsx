@@ -10,7 +10,7 @@ import {
   Info,
   BookOpen
 } from 'lucide-react';
-import { FocusCardItem, FocusCardPurpose, ResourceItem } from '../types';
+import { FocusCardItem, FocusCardPurpose, ResourceItem, UserAccountSettings } from '../types';
 
 interface FocusAddCardModalProps {
   isOpen: boolean;
@@ -19,7 +19,7 @@ interface FocusAddCardModalProps {
   currentCardCount: number;
   resources: ResourceItem[];
   onShowToast: (msg: string) => void;
-  settings?: { theme?: 'light' | 'dark' };
+  settings?: UserAccountSettings;
 }
 
 export const FocusAddCardModal: React.FC<FocusAddCardModalProps> = ({
@@ -194,7 +194,7 @@ export const FocusAddCardModal: React.FC<FocusAddCardModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="focus-modal-title"
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 select-none animate-fade-in font-sans ${isDark ? 'bg-black/80' : 'bg-white/60'}`}
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 select-none animate-fade-in font-sans bg-black/80 backdrop-blur-md`}
     >
       <div className={`relative w-full max-w-md rounded-lg p-5 shadow-2xl flex flex-col gap-4 ${isDark ? 'bg-neutral-900 border border-neutral-700 text-white' : 'bg-neutral-50 border border-neutral-300 text-black'}`}>
         {/* Header */}

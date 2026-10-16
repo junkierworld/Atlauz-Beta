@@ -69,6 +69,34 @@
     --motion-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
     --motion-normal: 250ms cubic-bezier(0.16, 1, 0.3, 1);
     --motion-slow: 300ms cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* Theme CSS Variables (Dark Theme Defaults) */
+    --theme-primary: #e63946;
+    --theme-secondary: #f4a261;
+    --theme-neutral-dark: #0a0a0a;
+    --theme-neutral-light: #ffffff;
+    --theme-bg-primary: #0a0a0a;
+    --theme-bg-secondary: #1a1a1a;
+    --theme-card-bg: #121212;
+    --theme-card-border: #262626;
+    --theme-card-gradient: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
+    --theme-backdrop-pattern: repeating-linear-gradient(45deg, rgba(255,255,255,0.03), rgba(255,255,255,0.03) 10px, transparent 10px, transparent 20px);
+    --theme-header-bg: #0a0a0a;
+    --theme-header-text: #ffffff;
+    --theme-hero-bg: linear-gradient(135deg, #e63946 0%, #f4a261 100%);
+    --theme-action-btn-bg: #1a1a1a;
+    --theme-action-btn-text: #ffffff;
+    --theme-card-header-bg: #0f0f0f;
+    --theme-card-surface: #121212;
+    --theme-text-primary: #ffffff;
+    --theme-text-secondary: #d4d4d4;
+    --theme-text-muted: #888888;
+    --theme-accent: #ffffff;
+    --theme-accent-glow: rgba(230, 57, 70, 0.3);
+    --theme-highlight: #f4a261;
+    --theme-badge-bg: #e63946;
+    --theme-badge-text: #ffffff;
+    --theme-texture: none;
   }
 
   html.light {
@@ -96,6 +124,21 @@
     --color-state-warning-bg: rgba(180, 83, 9, 0.12);
     --color-state-info: #1e40af;
     --color-state-info-bg: rgba(29, 78, 216, 0.12);
+
+    /* Light mode theme overrides - keep theme colors for accents */
+    --theme-bg-primary: #f9fafb;
+    --theme-bg-secondary: #f3f4f6;
+    --theme-card-bg: #ffffff;
+    --theme-card-border: #e5e7eb;
+    --theme-card-gradient: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+    --theme-header-bg: #ffffff;
+    --theme-header-text: #0f172a;
+    --theme-action-btn-bg: #f3f4f6;
+    --theme-action-btn-text: #0f172a;
+    --theme-text-primary: #0f172a;
+    --theme-text-secondary: #334155;
+    --theme-text-muted: #64748b;
+    /* Keep theme's primary and secondary colors for accents */
   }
 
   *, *::before, *::after {
@@ -108,6 +151,36 @@
     -webkit-tap-highlight-color: transparent;
     background-color: var(--color-bg-base);
     color: var(--color-text-primary);
+  }
+
+  html.light body {
+    background-color: #f9fafb;
+    color: #0f172a;
+  }
+
+  html.light button {
+    color: #0f172a;
+  }
+
+  html.light input,
+  html.light textarea,
+  html.light select {
+    color: #0f172a;
+    background-color: #ffffff;
+    border-color: #e5e7eb;
+  }
+
+  html.light [class*="card"],
+  html.light [class*="Card"],
+  html.light [class*="panel"],
+  html.light [class*="Panel"] {
+    background-color: #ffffff !important;
+    border-color: #e5e7eb !important;
+    color: #0f172a !important;
+  }
+
+  html.light a {
+    color: var(--theme-primary, #e63946) !important;
   }
 
   /* Accessible Focus Rings across all keyboard interactions */
@@ -293,3 +366,1376 @@ html.light .bg-prototype-grid {
 .custom-right-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--theme-secondary, var(--theme-highlight, #ffffff));
 }
+
+/* ========== COMPREHENSIVE GLOBAL THEME APPLICATION ==========
+   Forces all components to use active theme CSS variables
+   Ensures complete atmospheric integration across entire app
+*/
+
+/* Main content areas */
+main, section, article, [role="region"] {
+  background-color: var(--theme-bg-primary, #0a0a0a) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* All card-like containers */
+[class*="card"], [class*="panel"], [class*="section"], [class*="container"],
+.rounded-lg, .rounded-xl, .rounded-2xl {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Backgrounds and surfaces */
+.bg-neutral-900, .bg-neutral-800, .bg-black, .bg-slate-900 {
+  background-color: var(--theme-card-bg, #121212) !important;
+}
+
+.bg-neutral-700, .bg-neutral-600 {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+}
+
+/* Text colors - ensure contrast */
+.text-white, .text-neutral-100, .text-neutral-200 {
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+.text-neutral-300, .text-neutral-400, .text-gray-400 {
+  color: var(--theme-text-secondary, #d4d4d4) !important;
+}
+
+.text-neutral-500, .text-neutral-600, .text-gray-500, .text-gray-600 {
+  color: var(--theme-text-muted, #888888) !important;
+}
+
+/* Borders - use theme borders */
+.border-neutral-700, .border-neutral-800, .border-gray-700, .border-gray-800 {
+  border-color: var(--theme-card-border, #262626) !important;
+}
+
+.border-neutral-600, .border-gray-600 {
+  border-color: var(--theme-card-border, #404040) !important;
+}
+
+/* Active states and highlights */
+.active, [aria-selected="true"], .selected {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946) !important;
+  color: var(--theme-primary, #e63946) !important;
+  box-shadow: inset 0 0 12px var(--theme-primary, #e63946)15 !important;
+}
+
+/* Tabs and navigation items */
+[role="tab"], [role="tabpanel"] {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+[role="tab"]:hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946)40 !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+  box-shadow: inset 0 0 8px var(--theme-primary, #e63946)08 !important;
+}
+
+[role="tab"][aria-selected="true"], [role="tab"].active {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946) !important;
+  border-bottom-color: var(--theme-primary, #e63946) !important;
+  color: var(--theme-primary, #e63946) !important;
+  box-shadow: inset 0 2px 8px var(--theme-primary, #e63946)12, 0 2px 8px var(--theme-accent-glow, rgba(230, 57, 70, 0.15)) !important;
+}
+
+/* Buttons - apply theme colors */
+button:not([disabled]) {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+  transition: all 200ms ease;
+}
+
+button:hover:not([disabled]) {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+  box-shadow: inset 0 0 20px var(--theme-primary, #e63946)20, 0 0 8px var(--theme-accent-glow, rgba(230, 57, 70, 0.2)) !important;
+}
+
+/* Input fields */
+input, textarea, select {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--theme-primary, #e63946) !important;
+  box-shadow: 0 0 10px var(--theme-accent-glow, rgba(230, 57, 70, 0.3)) !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--theme-text-muted, #888888) !important;
+  opacity: 0.7;
+}
+
+/* Dividers and borders */
+hr, [role="separator"] {
+  border-color: var(--theme-card-border, #262626) !important;
+}
+
+/* Badges and pills */
+.badge, .pill, [class*="badge"], [class*="pill"] {
+  background-color: var(--theme-primary, #e63946) !important;
+  color: var(--theme-action-btn-text, #ffffff) !important;
+  border-color: var(--theme-accent, #ffffff) !important;
+}
+
+/* Modal and overlay backgrounds */
+.modal, .overlay, .dialog, [role="dialog"] {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+}
+
+/* Gradient overlays - use theme gradients */
+.gradient-overlay, .gradient-bg {
+  background: var(--theme-card-gradient, linear-gradient(135deg, var(--theme-card-bg, #121212) 0%, var(--theme-bg-secondary, #1a1a1a) 100%)) !important;
+}
+
+/* Glow effects */
+.glow, [class*="glow"], .shadow-lg {
+  box-shadow: 0 0 20px var(--theme-accent-glow, rgba(230, 57, 70, 0.3)) !important;
+}
+
+/* Hover and interaction states */
+[class*="hover"], :hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946)40 !important;
+}
+
+/* Lists and grid items */
+li, [role="listitem"], [role="gridcell"] {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Accent and primary colored elements */
+.text-primary, .text-accent, [class*="primary"], [class*="accent"] {
+  color: var(--theme-primary, #e63946) !important;
+}
+
+/* Secondary color elements */
+.text-secondary, [class*="secondary"] {
+  color: var(--theme-secondary, #f4a261) !important;
+}
+
+/* Highlight elements */
+.highlight, .marked {
+  background-color: var(--theme-highlight, #f4a261) !important;
+  color: var(--theme-card-bg, #121212) !important;
+}
+
+/* Status indicators */
+.status, [class*="status"] {
+  background-color: var(--theme-primary, #e63946) !important;
+}
+
+.status.active, .status.online {
+  background-color: var(--theme-highlight, #f4a261) !important;
+}
+
+/* Ensure all text is readable with theme colors */
+* {
+  --tw-text-opacity: 1;
+  --tw-bg-opacity: 1;
+  --tw-border-opacity: 1;
+}
+
+/* ========== TAILWIND CLASS OVERRIDE LAYER ==========
+   Override ALL hardcoded Tailwind classes with theme variables
+   Priority: Ensure themes apply to every element
+*/
+
+/* Neutrals to theme mapping */
+.bg-neutral-50, .bg-slate-50, .bg-stone-50, .bg-gray-50 { background-color: var(--theme-bg-primary, #0a0a0a) !important; }
+.bg-neutral-100, .bg-slate-100, .bg-stone-100, .bg-gray-100 { background-color: var(--theme-bg-primary, #0a0a0a) !important; }
+.bg-neutral-200, .bg-slate-200, .bg-stone-200, .bg-gray-200 { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+.bg-neutral-300, .bg-slate-300, .bg-stone-300, .bg-gray-300 { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+.bg-neutral-400, .bg-slate-400, .bg-stone-400, .bg-gray-400 { background-color: var(--theme-card-bg, #121212) !important; }
+.bg-neutral-500, .bg-slate-500, .bg-stone-500, .bg-gray-500 { background-color: var(--theme-card-bg, #121212) !important; }
+.bg-neutral-600, .bg-slate-600, .bg-stone-600, .bg-gray-600 { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+.bg-neutral-700, .bg-slate-700, .bg-stone-700, .bg-gray-700 { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+.bg-neutral-800, .bg-slate-800, .bg-stone-800, .bg-gray-800 { background-color: var(--theme-card-bg, #121212) !important; }
+.bg-neutral-900, .bg-slate-900, .bg-stone-900, .bg-gray-900 { background-color: var(--theme-card-bg, #121212) !important; }
+
+/* Dark mode variants */
+.dark\:bg-neutral-50 { background-color: var(--theme-bg-primary, #0a0a0a) !important; }
+.dark\:bg-neutral-100 { background-color: var(--theme-bg-primary, #0a0a0a) !important; }
+.dark\:bg-neutral-200 { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+.dark\:bg-neutral-300 { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+.dark\:bg-neutral-400 { background-color: var(--theme-card-bg, #121212) !important; }
+.dark\:bg-neutral-500 { background-color: var(--theme-card-bg, #121212) !important; }
+.dark\:bg-neutral-600 { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+.dark\:bg-neutral-700 { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+.dark\:bg-neutral-800 { background-color: var(--theme-card-bg, #121212) !important; }
+.dark\:bg-neutral-900 { background-color: var(--theme-card-bg, #121212) !important; }
+
+/* Text color overrides */
+.text-neutral-50, .text-slate-50, .text-stone-50, .text-gray-50 { color: var(--theme-text-primary, #ffffff) !important; }
+.text-neutral-100, .text-slate-100, .text-stone-100, .text-gray-100 { color: var(--theme-text-primary, #ffffff) !important; }
+.text-neutral-200, .text-slate-200, .text-stone-200, .text-gray-200 { color: var(--theme-text-primary, #ffffff) !important; }
+.text-neutral-300, .text-slate-300, .text-stone-300, .text-gray-300 { color: var(--theme-text-secondary, #d4d4d4) !important; }
+.text-neutral-400, .text-slate-400, .text-stone-400, .text-gray-400 { color: var(--theme-text-secondary, #d4d4d4) !important; }
+.text-neutral-500, .text-slate-500, .text-stone-500, .text-gray-500 { color: var(--theme-text-muted, #888888) !important; }
+.text-neutral-600, .text-slate-600, .text-stone-600, .text-gray-600 { color: var(--theme-text-muted, #888888) !important; }
+.text-neutral-700, .text-slate-700, .text-stone-700, .text-gray-700 { color: var(--theme-text-muted, #888888) !important; }
+.text-neutral-800, .text-slate-800, .text-stone-800, .text-gray-800 { color: var(--theme-text-primary, #ffffff) !important; }
+.text-neutral-900, .text-slate-900, .text-stone-900, .text-gray-900 { color: var(--theme-text-primary, #ffffff) !important; }
+
+/* Dark text variants */
+.dark\:text-neutral-50 { color: var(--theme-text-primary, #ffffff) !important; }
+.dark\:text-neutral-100 { color: var(--theme-text-primary, #ffffff) !important; }
+.dark\:text-neutral-200 { color: var(--theme-text-primary, #ffffff) !important; }
+.dark\:text-neutral-300 { color: var(--theme-text-secondary, #d4d4d4) !important; }
+.dark\:text-neutral-400 { color: var(--theme-text-secondary, #d4d4d4) !important; }
+.dark\:text-neutral-500 { color: var(--theme-text-muted, #888888) !important; }
+.dark\:text-neutral-600 { color: var(--theme-text-muted, #888888) !important; }
+.dark\:text-neutral-700 { color: var(--theme-text-muted, #888888) !important; }
+.dark\:text-neutral-800 { color: var(--theme-text-primary, #ffffff) !important; }
+.dark\:text-neutral-900 { color: var(--theme-text-primary, #ffffff) !important; }
+
+/* Border color overrides */
+.border-neutral-100, .border-slate-100, .border-stone-100, .border-gray-100 { border-color: var(--theme-card-border, #262626) !important; }
+.border-neutral-200, .border-slate-200, .border-stone-200, .border-gray-200 { border-color: var(--theme-card-border, #262626) !important; }
+.border-neutral-300, .border-slate-300, .border-stone-300, .border-gray-300 { border-color: var(--theme-card-border, #262626) !important; }
+.border-neutral-400, .border-slate-400, .border-stone-400, .border-gray-400 { border-color: var(--theme-card-border, #404040) !important; }
+.border-neutral-500, .border-slate-500, .border-stone-500, .border-gray-500 { border-color: var(--theme-card-border, #404040) !important; }
+.border-neutral-600, .border-slate-600, .border-stone-600, .border-gray-600 { border-color: var(--theme-card-border, #404040) !important; }
+.border-neutral-700, .border-slate-700, .border-stone-700, .border-gray-700 { border-color: var(--theme-card-border, #262626) !important; }
+.border-neutral-800, .border-slate-800, .border-stone-800, .border-gray-800 { border-color: var(--theme-card-border, #262626) !important; }
+.border-neutral-900, .border-slate-900, .border-stone-900, .border-gray-900 { border-color: var(--theme-card-border, #262626) !important; }
+
+/* Specific black and white overrides */
+.bg-black, .dark\:bg-black { background-color: var(--theme-card-bg, #121212) !important; }
+.bg-white, .dark\:bg-white { background-color: var(--theme-card-bg, #121212) !important; }
+.text-black, .dark\:text-black { color: var(--theme-text-primary, #ffffff) !important; }
+.text-white, .dark\:text-white { color: var(--theme-text-primary, #ffffff) !important; }
+
+/* Hover states - add subtle theme tint */
+.hover\:bg-neutral-700:hover, .hover\:bg-neutral-800:hover, .hover\:bg-neutral-900:hover,
+.dark\:hover\:bg-neutral-700:hover, .dark\:hover\:bg-neutral-800:hover, .dark\:hover\:bg-neutral-900:hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946)40 !important;
+  box-shadow: inset 0 0 10px var(--theme-primary, #e63946)08 !important;
+}
+
+/* Active and selected states */
+.active, .selected, [aria-selected="true"], [aria-current="page"] {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946) !important;
+  color: var(--theme-primary, #e63946) !important;
+  box-shadow: inset 0 0 12px var(--theme-primary, #e63946)15, 0 0 8px var(--theme-accent-glow, rgba(230, 57, 70, 0.15)) !important;
+}
+
+/* ========== UNIVERSAL REACT COMPONENT STYLING ==========
+   Force ALL divs, spans, and semantic containers to respect theme
+   Targets component patterns across Hub, Library, Workspace, Companion, Profile
+*/
+
+/* All div elements with class attributes that look like containers */
+div[class*="flex"], div[class*="grid"], div[class*="block"] {
+  background-color: inherit !important;
+  color: inherit !important;
+}
+
+/* Container divs - use theme backgrounds */
+div.container, div[class*="container-"] {
+  background-color: var(--theme-bg-primary, #0a0a0a) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Row and column layouts */
+div[class*="row"], div[class*="col-"] {
+  background-color: inherit !important;
+  color: inherit !important;
+}
+
+/* Specific view containers */
+div[class*="View"], div[class*="view"], div[class*="Section"], div[class*="section"] {
+  background-color: var(--theme-bg-primary, #0a0a0a) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Hub, Library, Workspace, Companion, Profile specific overrides */
+[class*="HubView"], [class*="hub-"], [class*="Hub"] {
+  background-color: var(--theme-bg-primary, #0a0a0a) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+[class*="LibraryView"], [class*="library-"], [class*="Library"] {
+  background-color: var(--theme-bg-primary, #0a0a0a) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+[class*="WorkspaceView"], [class*="workspace-"], [class*="Workspace"] {
+  background-color: var(--theme-bg-primary, #0a0a0a) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+[class*="CompanionView"], [class*="companion-"], [class*="Companion"] {
+  background-color: var(--theme-bg-primary, #0a0a0a) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+[class*="ProfileView"], [class*="profile-"], [class*="Profile"] {
+  background-color: var(--theme-bg-primary, #0a0a0a) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Card-like elements - ensure theme card styling */
+div[class*="card"], [class*="Card"] {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Panel, sidebar, drawer elements */
+div[class*="panel"], [class*="Panel"],
+div[class*="sidebar"], [class*="Sidebar"],
+div[class*="drawer"], [class*="Drawer"] {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Header and nav areas */
+header, nav, [role="navigation"],
+div[class*="header"], [class*="Header"],
+div[class*="navbar"], [class*="Navbar"] {
+  background-color: var(--theme-header-bg, #0a0a0a) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-header-text, #ffffff) !important;
+}
+
+/* Footer and bottom elements */
+footer, [role="contentinfo"],
+div[class*="footer"], [class*="Footer"] {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-secondary, #d4d4d4) !important;
+}
+
+/* All clickable elements - use theme colors */
+div[class*="button"], [class*="Button"],
+div[class*="item"], [class*="Item"],
+div[class*="action"], [class*="Action"] {
+  background-color: var(--theme-action-btn-bg, #1a1a1a) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+  transition: all 200ms ease !important;
+}
+
+div[class*="button"]:hover, [class*="Button"]:hover,
+div[class*="item"]:hover, [class*="Item"]:hover,
+div[class*="action"]:hover, [class*="Action"]:hover {
+  background-color: var(--theme-action-btn-bg, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946)40 !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+  box-shadow: inset 0 0 10px var(--theme-primary, #e63946)08, 0 0 6px var(--theme-accent-glow, rgba(230, 57, 70, 0.12)) !important;
+}
+
+/* Modal and dialog overlays */
+div[class*="modal"], [class*="Modal"],
+div[class*="dialog"], [class*="Dialog"],
+div[class*="overlay"], [class*="Overlay"] {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Form elements and inputs */
+div[class*="form"], [class*="Form"],
+div[class*="input"], [class*="Input"],
+div[class*="field"], [class*="Field"] {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* List and grid items */
+div[class*="list"], [class*="List"],
+div[class*="grid"], [class*="Grid"],
+div[class*="item"], [class*="Item"] {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Tab and navigation states */
+div[class*="tab"], [class*="Tab"],
+div[class*="nav-item"], [class*="NavItem"] {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+div[class*="tab"][class*="active"], [class*="Tab"][class*="active"],
+div[class*="nav-item"][class*="active"], [class*="NavItem"][class*="active"] {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946) !important;
+  color: var(--theme-primary, #e63946) !important;
+  box-shadow: inset 0 0 10px var(--theme-primary, #e63946)12, 0 0 6px var(--theme-accent-glow, rgba(230, 57, 70, 0.12)) !important;
+}
+
+/* Badge, tag, label elements */
+div[class*="badge"], [class*="Badge"],
+div[class*="tag"], [class*="Tag"],
+span[class*="badge"], span[class*="tag"],
+div[class*="label"], [class*="Label"] {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946) !important;
+  color: var(--theme-primary, #e63946) !important;
+}
+
+/* Alert and notification boxes */
+div[class*="alert"], [class*="Alert"],
+div[class*="notification"], [class*="Notification"],
+div[class*="toast"], [class*="Toast"] {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-primary, #e63946) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Tooltip and popover elements */
+div[class*="tooltip"], [class*="Tooltip"],
+div[class*="popover"], [class*="Popover"] {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-secondary, #d4d4d4) !important;
+}
+
+/* Divider and separator lines */
+div[class*="divider"], [class*="Divider"],
+div[class*="separator"], [class*="Separator"] {
+  background-color: var(--theme-card-border, #262626) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+}
+
+/* Skeleton and loading state placeholders */
+div[class*="skeleton"], [class*="Skeleton"],
+div[class*="loading"], [class*="Loading"],
+div[class*="placeholder"], [class*="Placeholder"] {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+}
+
+/* Ensure all text within components respects theme */
+span, p, a, h1, h2, h3, h4, h5, h6 {
+  color: inherit !important;
+}
+
+/* Links - use theme accent */
+a, [role="link"] {
+  color: var(--theme-primary, #e63946) !important;
+}
+
+a:hover, [role="link"]:hover {
+  color: var(--theme-secondary, #f4a261) !important;
+  text-decoration: underline !important;
+}
+
+/* Code blocks and preformatted text */
+code, pre, [class*="code"], [class*="Code"] {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-secondary, #d4d4d4) !important;
+  font-family: 'Monaco', 'Courier New', monospace !important;
+}
+
+/* Table elements */
+table, thead, tbody, tfoot, tr, td, th {
+  background-color: inherit !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: inherit !important;
+}
+
+thead, [role="columnheader"] {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+tbody tr:hover, tr[class*="hover"] {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946)40 !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Progress bars and meters */
+progress, [role="progressbar"], [class*="progress"], [class*="Progress"] {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  accent-color: var(--theme-primary, #e63946) !important;
+}
+
+progress::-webkit-progress-bar {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+}
+
+progress::-webkit-progress-value {
+  background-color: var(--theme-primary, #e63946) !important;
+}
+
+/* Sliders and range inputs */
+input[type="range"], [class*="slider"], [class*="Slider"] {
+  accent-color: var(--theme-primary, #e63946) !important;
+}
+
+input[type="range"]::-webkit-slider-track {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  background-color: var(--theme-primary, #e63946) !important;
+  border-color: var(--theme-accent, #ffffff) !important;
+}
+
+/* Checkboxes and radio buttons */
+input[type="checkbox"], input[type="radio"],
+[class*="checkbox"], [class*="Checkbox"],
+[class*="radio"], [class*="Radio"] {
+  accent-color: var(--theme-primary, #e63946) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+}
+
+/* Select dropdowns */
+select {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23ffffff'%3E%3Cpath fill-rule='evenodd' d='M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.5rem center !important;
+  background-size: 1.5em 1.5em !important;
+  padding-right: 2.5rem !important;
+}
+
+select option {
+  background-color: var(--theme-card-bg, #121212) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Ensure app root inherits theme properly */
+#root, #app, [role="application"] {
+  background-color: var(--theme-bg-primary, #0a0a0a) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+  min-height: 100vh;
+}
+
+/* Scrollbar styling across entire app */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--theme-bg-secondary, rgba(0, 0, 0, 0.4));
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--theme-accent, #ffffff);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-secondary, var(--theme-highlight, #ffffff));
+}
+
+
+/* ========== FORCE ALL CONTENT TO INHERIT THEME ==========
+   Additional aggressive measures to ensure theme cascades to all elements
+*/
+
+/* Make text elements inherit their parent's colors by default */
+p, span, div, li, td, th, label, a {
+  color: inherit;
+}
+
+/* Force root element to propagate theme */
+html, body, #root, #app {
+  background-color: var(--theme-bg-primary, #0a0a0a) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Force main content areas */
+main, [role="main"], .main-content, [class*="content"] {
+  background-color: var(--theme-bg-primary, #0a0a0a) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* React components typically use these patterns */
+[class*="component"], [class*="Component"],
+[data-testid], [role="main"], [role="region"] {
+  background-color: inherit !important;
+  color: inherit !important;
+}
+
+/* Force all text elements to respect theme text colors */
+p, span, div, a, h1, h2, h3, h4, h5, h6, li, td, th, label {
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Override any gray text with proper theme text hierarchy */
+[class*="text"], [class*="Text"] {
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Ensure all surfaces use theme colors */
+[class*="surface"], [class*="Surface"],
+[class*="bg"], [class*="background"] {
+  background-color: var(--theme-bg-primary, #0a0a0a) !important;
+}
+
+/* Cards and contained elements */
+[class*="content"], [class*="Content"],
+[class*="container"], [class*="Container"] {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Navigation and sidebar items */
+[class*="nav"], [class*="Nav"],
+[class*="menu"], [class*="Menu"],
+[class*="sidebar"], [class*="Sidebar"] {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Active/selected states across all patterns */
+[class*="active"], [class*="Active"],
+[class*="selected"], [class*="Selected"],
+[class*="current"], [class*="Current"] {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946) !important;
+  color: var(--theme-primary, #e63946) !important;
+  box-shadow: inset 0 0 10px var(--theme-primary, #e63946)12, 0 0 6px var(--theme-accent-glow, rgba(230, 57, 70, 0.12)) !important;
+}
+
+/* Ensure proper text hierarchy throughout */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+strong, b, .font-bold, [class*="bold"] {
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+em, i, .font-italic, [class*="italic"] {
+  color: var(--theme-text-secondary, #d4d4d4) !important;
+}
+
+small, .text-small, [class*="small-text"] {
+  color: var(--theme-text-muted, #888888) !important;
+}
+
+/* Override any remaining neutral color references */
+[class*="neutral"], [class*="gray"], [class*="slate"], [class*="stone"] {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+/* Ensure disabled states still use theme */
+:disabled, [disabled], [aria-disabled="true"], .disabled {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-muted, #888888) !important;
+  opacity: 0.6;
+}
+
+/* Shadows and glows use theme colors */
+[class*="shadow"], [class*="Shadow"] {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4), 0 0 20px var(--theme-accent-glow, rgba(230, 57, 70, 0.2)) !important;
+}
+
+/* Gradients use theme colors */
+[style*="gradient"], [class*="gradient"] {
+  background: var(--theme-card-gradient, linear-gradient(135deg, var(--theme-bg-primary, #0a0a0a) 0%, var(--theme-bg-secondary, #1a1a1a) 100%)) !important;
+}
+
+/* Make sure any absolute or fixed positioned elements still get theme */
+[style*="position: absolute"], [style*="position: fixed"] {
+  background-color: var(--theme-card-bg, #121212) !important;
+  color: var(--theme-text-primary, #ffffff) !important;
+}
+
+
+/* ========== SUBTLE HOVER & ACTIVE STATE REFINEMENTS ==========
+   Low-opacity tints, gentle glows, inset shadows (no solid fills)
+   Preserves dark backgrounds and maintains text contrast
+*/
+
+/* Universal low-opacity hover tint overlay */
+[class*="hover"]:hover,
+button:hover,
+[role="button"]:hover,
+[role="tab"]:hover,
+[role="menuitem"]:hover,
+a:hover {
+  background: linear-gradient(var(--theme-bg-secondary, #1a1a1a), var(--theme-bg-secondary, #1a1a1a)), 
+              linear-gradient(rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.02)) !important;
+  box-shadow: inset 0 0 8px var(--theme-primary, #e63946)08 !important;
+}
+
+/* Interactive elements - subtle border accent on hover */
+div[class*="interactive"]:hover,
+[class*="clickable"]:hover {
+  border-color: var(--theme-primary, #e63946)35 !important;
+  box-shadow: inset 0 0 10px var(--theme-primary, #e63946)08, 
+              0 0 4px var(--theme-accent-glow, rgba(230, 57, 70, 0.08)) !important;
+}
+
+/* Cards and panels hover - subtle lift and glow */
+[class*="card"]:hover,
+[class*="Card"]:hover,
+[class*="panel"]:hover,
+[class*="Panel"]:hover {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-primary, #e63946)30 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 
+              inset 0 0 8px var(--theme-primary, #e63946)06 !important;
+}
+
+/* Focus states - visible but not overwhelming */
+:focus,
+:focus-within,
+:focus-visible {
+  background: linear-gradient(var(--theme-bg-secondary, #1a1a1a), var(--theme-bg-secondary, #1a1a1a)) !important;
+  outline: 1px solid var(--theme-primary, #e63946) !important;
+  outline-offset: 2px !important;
+  box-shadow: inset 0 0 6px var(--theme-primary, #e63946)06, 
+              0 0 8px var(--theme-accent-glow, rgba(230, 57, 70, 0.12)) !important;
+}
+
+/* Input field focus - subtle glow with dark background preserved */
+input:focus,
+textarea:focus,
+select:focus {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-primary, #e63946) !important;
+  box-shadow: inset 0 0 8px var(--theme-primary, #e63946)05, 
+              0 0 8px var(--theme-accent-glow, rgba(230, 57, 70, 0.15)) !important;
+}
+
+/* Navigation items - indicator line instead of fill */
+[role="tab"]:hover::after,
+[role="tab"][aria-selected="true"]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--theme-primary, #e63946) !important;
+  opacity: 0.4;
+}
+
+[role="tab"][aria-selected="true"]::after {
+  opacity: 1;
+  height: 3px;
+}
+
+/* Menu and list items - border left accent instead of background */
+[role="menuitem"]:hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-left: 3px solid var(--theme-primary, #e63946) !important;
+  padding-left: calc(1rem - 3px) !important;
+  box-shadow: inset 1px 0 4px var(--theme-primary, #e63946)10 !important;
+}
+
+[role="option"]:hover,
+[role="listitem"]:hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946)40 !important;
+  box-shadow: inset 0 0 6px var(--theme-primary, #e63946)05 !important;
+}
+
+/* Disabled state - truly muted */
+:disabled,
+[disabled],
+[aria-disabled="true"],
+.disabled {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-card-border, #262626) !important;
+  color: var(--theme-text-muted, #888888) !important;
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* Checkbox and radio hover - subtle border accent */
+input[type="checkbox"]:hover,
+input[type="radio"]:hover {
+  border-color: var(--theme-primary, #e63946)50 !important;
+  box-shadow: inset 0 0 4px var(--theme-primary, #e63946)08 !important;
+}
+
+/* Switch toggle hover */
+[role="switch"]:hover {
+  border-color: var(--theme-primary, #e63946)40 !important;
+  box-shadow: inset 0 0 8px var(--theme-primary, #e63946)05, 
+              0 0 6px var(--theme-accent-glow, rgba(230, 57, 70, 0.1)) !important;
+}
+
+/* Alert/notification on hover - subtle elevation */
+[role="alert"]:hover,
+[class*="notification"]:hover,
+[class*="toast"]:hover {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-primary, #e63946)40 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 
+              inset 0 0 8px var(--theme-primary, #e63946)05 !important;
+}
+
+/* Links - subtle underline effect instead of color change */
+a {
+  position: relative;
+}
+
+a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background-color: var(--theme-primary, #e63946);
+  transition: width 200ms ease;
+}
+
+a:hover::after {
+  width: 100%;
+}
+
+/* Reduce glow effect on all elements for subtlety */
+[class*="glow"],
+[class*="shadow-lg"] {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), 
+              0 0 12px var(--theme-accent-glow, rgba(230, 57, 70, 0.1)) !important;
+}
+
+/* ========== OVERRIDE ALL HARDCODED TAILWIND HOVER CLASSES ==========
+   Catch all hover:bg-* and dark:hover:bg-* patterns from components
+*/
+
+/* Override all hover:bg- Tailwind utilities - use low opacity tint */
+[class*="hover:bg-"],
+.hover\:bg-neutral-700:hover,
+.hover\:bg-neutral-800:hover,
+.hover\:bg-neutral-900:hover,
+.dark\:hover\:bg-neutral-700:hover,
+.dark\:hover\:bg-neutral-800:hover,
+.dark\:hover\:bg-neutral-900:hover,
+.hover\:bg-neutral-950:hover,
+.dark\:hover\:bg-neutral-950:hover,
+.hover\:bg-white:hover,
+.hover\:bg-black:hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+}
+
+/* Specific overrides for common hover:bg patterns */
+.hover\:bg-neutral-200:hover { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+.hover\:bg-neutral-100:hover { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+.hover\:bg-neutral-50:hover { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+.hover\:bg-slate-700:hover { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+.hover\:bg-slate-800:hover { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+.hover\:bg-slate-900:hover { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+.hover\:bg-gray-700:hover { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+.hover\:bg-gray-800:hover { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+.hover\:bg-gray-900:hover { background-color: var(--theme-bg-secondary, #1a1a1a) !important; }
+
+/* Override active/selected background fills */
+.active\:bg-neutral-800,
+.active\:scale-95:active {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  transform: scale(0.98) !important;
+}
+
+/* Override focus:bg-* utilities */
+.focus\:bg-neutral-800:focus,
+.focus\:bg-neutral-900:focus {
+  background-color: var(--theme-card-bg, #121212) !important;
+  box-shadow: inset 0 0 6px var(--theme-primary, #e63946)06, 
+              0 0 8px var(--theme-accent-glow, rgba(230, 57, 70, 0.12)) !important;
+}
+
+/* Override focus:ring classes - make them subtle */
+.focus\:ring-2,
+.focus-visible\:ring-2 {
+  outline: 1px solid var(--theme-primary, #e63946) !important;
+  outline-offset: 1px !important;
+}
+
+/* Ensure text contrast is maintained on all hovers */
+.hover\:text-white:hover { color: var(--theme-text-primary, #ffffff) !important; }
+.hover\:text-neutral-200:hover { color: var(--theme-text-primary, #ffffff) !important; }
+.dark\:hover\:text-white:hover { color: var(--theme-text-primary, #ffffff) !important; }
+
+/* Low-opacity border accent instead of solid fill */
+.hover\:border-neutral-600:hover,
+.hover\:border-neutral-700:hover,
+.dark\:hover\:border-neutral-600:hover,
+.dark\:hover\:border-neutral-700:hover {
+  border-color: var(--theme-primary, #e63946)40 !important;
+}
+
+/* ========== NUCLEAR OPTION: ELIMINATE ALL SOLID HOVER FILLS ==========
+   MOST AGGRESSIVE OVERRIDE - Catches every possible solid background fill
+   on hover/active/focus across entire app without breaking interactive states
+*/
+
+/* Override ANY element trying to use solid theme-primary background on hover */
+[class*="hover:bg-\[var(--theme-primary"]:hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  box-shadow: inset 0 0 8px var(--theme-primary, #e63946)08 !important;
+}
+
+/* Catch all red color hovers and make them transparent */
+.hover\:bg-red-50:hover,
+.hover\:bg-red-100:hover,
+.hover\:bg-red-200:hover,
+.hover\:bg-red-300:hover,
+.hover\:bg-red-400:hover,
+.hover\:bg-red-500:hover,
+.hover\:bg-red-600:hover,
+.hover\:bg-red-700:hover,
+.hover\:bg-red-800:hover,
+.hover\:bg-red-900:hover,
+.hover\:bg-red-950:hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+}
+
+/* Override dark:hover:bg-red variants */
+.dark\:hover\:bg-red-50:hover,
+.dark\:hover\:bg-red-100:hover,
+.dark\:hover\:bg-red-200:hover,
+.dark\:hover\:bg-red-300:hover,
+.dark\:hover\:bg-red-400:hover,
+.dark\:hover\:bg-red-500:hover,
+.dark\:hover\:bg-red-600:hover,
+.dark\:hover\:bg-red-700:hover,
+.dark\:hover\:bg-red-800:hover,
+.dark\:hover\:bg-red-900:hover,
+.dark\:hover\:bg-red-950:hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+}
+
+/* Kill any solid fills on headers or section titles on hover */
+header:hover {
+  background-color: inherit !important;
+}
+
+[role="banner"]:hover {
+  background-color: inherit !important;
+}
+
+/* Remove solid backgrounds from badge/tag hovers */
+[class*="badge"]:hover,
+[class*="Badge"]:hover,
+[class*="tag"]:hover,
+[class*="Tag"]:hover,
+[class*="pill"]:hover,
+[class*="Pill"]:hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946)40 !important;
+  box-shadow: inset 0 0 6px var(--theme-primary, #e63946)05 !important;
+}
+
+/* Remove solid fills from card/panel hovers - keep dark background visible */
+[class*="card"]:hover,
+[class*="Card"]:hover,
+[class*="panel"]:hover,
+[class*="Panel"]:hover {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-primary, #e63946)30 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 0 8px var(--theme-primary, #e63946)06 !important;
+}
+
+/* Interactive buttons keep the subtle treatment */
+button:hover,
+[role="button"]:hover,
+a:hover,
+[role="link"]:hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  box-shadow: inset 0 0 8px var(--theme-primary, #e63946)08 !important;
+}
+
+/* Override active/selected states to avoid solid fills */
+:active,
+[aria-pressed="true"],
+[aria-selected="true"] {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946) !important;
+  box-shadow: inset 0 0 10px var(--theme-primary, #e63946)12 !important;
+}
+
+/* Focus states - subtle outline only */
+:focus,
+:focus-within,
+:focus-visible {
+  background-color: inherit !important;
+  outline: 1px solid var(--theme-primary, #e63946) !important;
+  outline-offset: 1px !important;
+  box-shadow: inset 0 0 6px var(--theme-primary, #e63946)06, 0 0 8px var(--theme-accent-glow, rgba(230, 57, 70, 0.12)) !important;
+}
+
+/* ========== UNIVERSAL THEME-AWARE HOVER OVERRIDES ==========
+   Works across ALL 25 themes by using CSS variables
+   Ensures no solid backgrounds on hover regardless of theme
+*/
+
+/* Force all theme-aware hovers to use subtle treatment */
+[style*="var(--theme-primary"]:hover,
+[style*="var(--theme-secondary"]:hover,
+[style*="var(--theme-accent"]:hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  box-shadow: inset 0 0 8px var(--theme-primary, #e63946)08 !important;
+}
+
+/* Catch theme-primary hardcoded backgrounds and make them subtle on hover */
+[class*="bg-red"]:hover,
+[class*="bg-orange"]:hover,
+[class*="bg-amber"]:hover,
+[class*="bg-yellow"]:hover,
+[class*="bg-lime"]:hover,
+[class*="bg-green"]:hover,
+[class*="bg-emerald"]:hover,
+[class*="bg-teal"]:hover,
+[class*="bg-cyan"]:hover,
+[class*="bg-blue"]:hover,
+[class*="bg-indigo"]:hover,
+[class*="bg-purple"]:hover,
+[class*="bg-pink"]:hover,
+[class*="bg-rose"]:hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946)40 !important;
+}
+
+/* Ensure theme cards never get solid fills on hover */
+[class*="theme-card"]:hover,
+[class*="ThemeCard"]:hover,
+[style*="--theme-card-bg"]:hover {
+  background-color: var(--theme-card-bg, #121212) !important;
+  border-color: var(--theme-primary, #e63946)30 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 0 8px var(--theme-primary, #e63946)06 !important;
+}
+
+/* All buttons across all themes use subtle hover treatment */
+button[style*="backgroundColor"]:hover,
+[role="button"][style*="backgroundColor"]:hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  box-shadow: inset 0 0 8px var(--theme-primary, #e63946)08 !important;
+}
+
+/* Ensure theme-aware interactive elements stay subtle */
+[data-theme]:hover,
+[data-theme-intensity]:hover {
+  background-color: inherit !important;
+}
+
+/* Override hover:bg-[color]/100 (full opacity) patterns */
+[class*="hover:bg-"]:hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+}
+
+/* Prevent ALL solid primary color fills on hover for any theme */
+[style*="background"] [style*="hover"],
+[class*="active"][style*="backgroundColor"] {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+  border-color: var(--theme-primary, #e63946)40 !important;
+}
+
+
+/* ========== ABSOLUTE FINAL OVERRIDE - NO SOLID HOVER FILLS ALLOWED ==========
+   This section uses inline style injection technique with maximum specificity
+   to FORCE all hover states to be subtle across the entire application
+*/
+
+/* ABSOLUTE BAN on solid background fills for ANY hover state */
+body [class*="hover"]:hover,
+body [class*="active"],
+body [aria-selected="true"],
+body button:hover,
+body [role="button"]:hover,
+body a:hover,
+body [role="link"]:hover,
+body [class*="card"]:hover,
+body [class*="Card"]:hover,
+body [class*="button"]:hover,
+body [class*="Button"]:hover,
+body [class*="item"]:hover,
+body [class*="Item"]:hover {
+  background-image: none !important;
+  background-color: transparent !important;
+}
+
+/* WHITELIST: Only these specific patterns get backgrounds */
+body button:hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+}
+
+body [role="button"]:hover {
+  background-color: var(--theme-bg-secondary, #1a1a1a) !important;
+}
+
+body a:hover {
+  background-color: transparent !important;
+}
+
+/* Force backdrop-filter on all modals */
+[class*="fixed"][class*="inset-0"][class*="z-50"] {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+/* Ensure ALL modal/dialog backgrounds are dark with blur */
+[class*="fixed"][class*="inset-0"][class*="z-50"]:not(button):not(a) {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* Kill any remaining bg-white on hover */
+.hover\:bg-white:hover {
+  background-color: transparent !important;
+}
+
+.dark\:hover\:bg-white:hover {
+  background-color: transparent !important;
+}
+
+/* Override any potential solid primary fills */
+[style*="background"]:hover {
+  background-color: inherit !important;
+}
+
+[style*="backgroundColor"]:hover {
+  background-color: inherit !important;
+}
+
+/* Catch animation/transition attempts to sneak in solid fills */
+@keyframes none {
+  to {
+    background-color: transparent !important;
+  }
+}
+
+/* Force ALL color properties through theme variables */
+:root * {
+  --override-bg: var(--theme-bg-secondary, #1a1a1a);
+}
+
+/* Specific hard blocks for theme-aware colors */
+[style*="var(--theme-primary"]:hover {
+  background-color: transparent !important;
+  border-color: var(--theme-primary)40 !important;
+}
+
+[style*="var(--theme-secondary"]:hover {
+  background-color: transparent !important;
+}
+
+[style*="var(--theme-accent"]:hover {
+  background-color: transparent !important;
+}
+
+
+/* ========== ABSOLUTE FINAL HOVER BAN - CATCH ALL REMAINING FILLS ==========
+   Multiple redundant layers to ensure NO solid fills appear on ANY hover
+*/
+
+/* Ban red fills specifically */
+.hover\:bg-red-500:hover,
+.hover\:bg-red-600:hover,
+.hover\:bg-red-700:hover,
+.active\:bg-red-500,
+.active\:bg-red-600,
+.active\:bg-red-700,
+[class*="bg-red"][class*="hover"] {
+  background-color: transparent !important;
+}
+
+/* Ban theme primary fills */
+.hover\:bg-primary:hover,
+.active\:bg-primary,
+[class*="hover:bg-\[var(--theme-primary"] {
+  background-color: transparent !important;
+  border-color: var(--theme-primary, #e63946)40 !important;
+}
+
+/* Universal block on ANY solid fill hover */
+[class*="hover:bg-"]:hover:not(button):not([role="button"]) {
+  background-color: transparent !important;
+}
+
+/* Cards must never get solid fills */
+.hover\:bg-neutral-700:hover,
+.hover\:bg-neutral-800:hover,
+.hover\:bg-neutral-900:hover,
+.dark\:hover\:bg-neutral-700:hover,
+.dark\:hover\:bg-neutral-800:hover,
+.dark\:hover\:bg-neutral-900:hover {
+  background-color: inherit !important;
+}
+
+/* Absolute block on Student Scholar card fills */
+[class*="Scholar"]:hover,
+[class*="scholar"]:hover,
+[class*="Ecosystem"]:hover,
+[class*="ecosystem"]:hover {
+  background-color: inherit !important;
+}
+
+
+/* ============================================================================
+   MOBILE & CAPACITOR OPTIMIZATIONS (v1.0.0)
+   ============================================================================ */
+
+/* Safe Area Padding for Notched Devices (iPhone X+, Android notches) */
+@supports (padding: max(0px)) {
+  main {
+    padding-bottom: max(6rem, env(safe-area-inset-bottom));
+  }
+
+  nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pb-safe {
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* Prevent horizontal scroll on mobile */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+}
+
+/* Smooth scrolling with momentum on iOS */
+main, .scrollable {
+  -webkit-overflow-scrolling: touch;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Prevent text selection on long press */
+button, [role="tab"], [role="button"] {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Viewport stability on address bar show/hide (Android) */
+@media (max-height: 500px) {
+  main {
+    height: auto;
+    min-height: 100vh;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase touch targets to minimum 44x44px */
+  button, [role="button"], [role="tab"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Remove hover states on touch devices */
+  button:hover, [role="button"]:hover {
+    background-color: inherit !important;
+  }
+
+  /* Add active state feedback for touch */
+  button:active {
+    opacity: 0.8;
+  }
+}
+
+/* Prevent zoom on iOS during focus */
+input, textarea, select {
+  font-size: 16px;
+  -webkit-user-zoom: enabled;
+  -moz-user-zoom: enabled;
+  user-zoom: enabled;
+}
+
+/* Keyboard appearance optimizations */
+body.keyboard-open main {
+  position: fixed;
+  width: 100%;
+}
+
+/* Status bar styling for iOS */
+@supports (padding: max(0px)) {
+  body {
+    padding-top: max(0px, env(safe-area-inset-top));
+  }
+}
+
+/* Fix for iOS address bar flickering */
+@media (max-height: 600px) {
+  header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+  }
+
+  main {
+    margin-top: 3.5rem;
+  }
+}
+
+/* Bottom nav safe area for iPhone notch */
+nav[role="navigation"] {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Disable double-tap zoom on buttons */
+button {
+  touch-action: manipulation;
+}
+
+/* Prevent long-press context menu */
+* {
+  -webkit-user-select: text;
+  -webkit-user-drag: none;
+}
+
+/* Icon sizing optimization for touch */
+svg {
+  pointer-events: none;
+}
+
+/* Animation performance on mobile */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Optimize backdrop filters for mobile performance */
+@supports (backdrop-filter: blur(10px)) {
+  .backdrop-blur-md {
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+}
+
+/* End of Mobile Optimizations */

@@ -16,7 +16,7 @@ import {
   CheckCircle2,
   Tag
 } from 'lucide-react';
-import { ResourceType, ResourceItem } from '../types';
+import { ResourceType, ResourceItem, UserAccountSettings } from '../types';
 import { AVAILABLE_BADGES } from '../data';
 
 interface CreateResourceModalProps {
@@ -24,7 +24,7 @@ interface CreateResourceModalProps {
   onClose: () => void;
   onCreateResource: (resource: ResourceItem, openImmediately: boolean) => void;
   onShowToast: (msg: string) => void;
-  settings?: { theme?: 'light' | 'dark' };
+  settings?: UserAccountSettings;
 }
 
 const RESOURCE_TYPES: Array<{
@@ -266,9 +266,7 @@ export const CreateResourceModal: React.FC<CreateResourceModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="create-modal-title"
-      className={`fixed inset-0 z-50 flex items-center justify-center p-3 font-sans ${
-        isDark ? 'bg-black/85' : 'bg-white/60'
-      }`}
+      className={`fixed inset-0 z-50 flex items-center justify-center p-3 font-sans bg-black/85 backdrop-blur-md`}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 8 }}

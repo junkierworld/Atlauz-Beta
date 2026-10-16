@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { FishTank } from './FishTank';
 import { AtlauzFish } from './AtlauzFish';
-import { AtlauzLogo } from './AtlauzLogo';
 import { CompanionState, CognitiveTelemetry, UserAccountSettings } from '../types';
 
 interface CompanionViewProps {
@@ -132,7 +131,25 @@ export const CompanionView = React.memo(function CompanionViewComponent({
           : 'bg-neutral-100 border-neutral-300'
       }`}>
         <div className="flex items-center gap-2">
-          <AtlauzLogo variant="icon" size={20} animated={false} />
+          {/* Minimal Chevron Logo */}
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 100 80"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="shrink-0"
+          >
+            <path
+              d="M 82 14 L 24 38 C 18 40.5, 18 43.5, 24 46 L 82 70"
+              stroke="currentColor"
+              strokeWidth="11"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-white"
+            />
+            <circle cx="48" cy="42" r="7.5" fill="currentColor" className="text-white" />
+          </svg>
           <div className="flex items-center gap-1.5">
             <span className={`font-bold text-sm sm:text-base ${
               isDark ? 'text-white' : 'text-neutral-900'

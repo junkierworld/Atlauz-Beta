@@ -47,13 +47,15 @@ interface CollaborativeBentoViewProps {
   onUpdateTiles: (tiles: CollaborativeBentoTile[]) => void;
   onShowToast: (msg: string) => void;
   isDistractionFree?: boolean;
+  isDark?: boolean;
 }
 
 export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
   tiles,
   onUpdateTiles,
   onShowToast,
-  isDistractionFree = false
+  isDistractionFree = false,
+  isDark = true
 }) => {
   const [activeTileId, setActiveTileId] = useState<string>(tiles[0]?.id || 'collab-bento-1');
   const [defrostedTileIds, setDefrostedTileIds] = useState<{ [id: string]: boolean }>({
@@ -434,15 +436,23 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
         <div className="flex items-center gap-2 font-mono text-xs">
           {/* Peer Activity Notification Pulse */}
           {activePeerNotification && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-neutral-950 border border-neutral-700 text-white text-[11px] animate-pulse">
-              <Activity className="w-3 h-3 text-white" />
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded border text-[11px] animate-pulse ${
+              isDark
+                ? 'bg-neutral-950 border-neutral-700 text-white'
+                : 'bg-neutral-100 border-neutral-400 text-neutral-900'
+            }`}>
+              <Activity className={`w-3 h-3 ${isDark ? 'text-white' : 'text-neutral-900'}`} />
               <span>{activePeerNotification}</span>
             </div>
           )}
 
           {/* BroadcastChannel status pill */}
-          <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded bg-neutral-950 border border-neutral-800 text-neutral-400 text-[10px]">
-            <Radio className="w-3 h-3 text-white animate-pulse" />
+          <div className={`hidden sm:flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] ${
+            isDark
+              ? 'bg-neutral-950 border-neutral-800 text-neutral-400'
+              : 'bg-neutral-100 border-neutral-400 text-neutral-600'
+          }`}>
+            <Radio className={`w-3 h-3 animate-pulse ${isDark ? 'text-white' : 'text-neutral-900'}`} />
             <span>BROADCAST READY</span>
           </div>
 
@@ -452,8 +462,12 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
             disabled={isSimulatingLiveEdit}
             className={`px-3 py-1.5 rounded border flex items-center gap-1.5 transition-all ${
               isSimulatingLiveEdit
-                ? 'bg-neutral-800 text-neutral-500 border-neutral-700'
-                : 'bg-neutral-950 hover:bg-neutral-800 text-white border-neutral-700 hover:border-white'
+                ? isDark
+                  ? 'bg-neutral-800 text-neutral-500 border-neutral-700'
+                  : 'bg-neutral-200 text-neutral-500 border-neutral-400'
+                : isDark
+                ? 'bg-neutral-950 hover:bg-neutral-800 text-white border-neutral-700 hover:border-white'
+                : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border-neutral-400 hover:border-neutral-600'
             }`}
             title="Simulate incoming peer block update and activity telemetry"
           >
@@ -464,9 +478,13 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
           {/* Share Token Button */}
           <button
             onClick={() => handleOpenShare(activeTile)}
-            className="px-3.5 py-1.5 rounded bg-white text-black font-bold flex items-center gap-1.5 hover:bg-neutral-200 transition-all"
+            className={`px-3.5 py-1.5 rounded font-bold flex items-center gap-1.5 hover:scale-105 transition-all border ${
+              isDark
+                ? 'bg-white text-black hover:bg-neutral-200 border-white'
+                : 'bg-neutral-900 text-white hover:bg-neutral-800 border-neutral-900'
+            }`}
           >
-            <Share2 className="w-3.5 h-3.5 text-black" />
+            <Share2 className={`w-3.5 h-3.5 ${isDark ? 'text-black' : 'text-white'}`} />
             <span>Share Token</span>
           </button>
         </div>
@@ -493,18 +511,30 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
                   : 'lg:col-span-12 min-h-[300px]'
               } ${
                 isDefrosted
-                  ? 'bg-neutral-900 border border-neutral-700 shadow-xl'
-                  : 'bg-neutral-900/60 backdrop-blur-xl border border-neutral-800'
-              } ${isSelected ? 'ring-1 ring-white/60' : ''}`}
+                  ? isDark
+                    ? 'bg-neutral-900 border border-neutral-700 shadow-xl'
+                    : 'bg-neutral-50 border border-neutral-300 shadow-lg'
+                  : isDark
+                  ? 'bg-neutral-900/60 backdrop-blur-xl border border-neutral-800'
+                  : 'bg-neutral-100/60 backdrop-blur-xl border border-neutral-300'
+              } ${isSelected ? isDark ? 'ring-1 ring-white/60' : 'ring-1 ring-neutral-900/60' : ''}`}
             >
               <div>
                 {/* Tile Top Boundary: Minimalist Collaborator Badges & Telemetry */}
-                <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-neutral-800 font-mono text-xs">
+                <div className={`flex items-center justify-between pb-2.5 mb-3 border-b font-mono text-xs ${
+                  isDark
+                    ? 'border-neutral-800 text-neutral-400'
+                    : 'border-neutral-300 text-neutral-600'
+                }`}>
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[10px] uppercase font-bold text-neutral-400">
+                    <span className={`text-[10px] uppercase font-bold ${
+                      isDark ? 'text-neutral-400' : 'text-neutral-600'
+                    }`}>
                       [{tile.type.replace('_', ' ')}]
                     </span>
-                    <h3 className="font-bold text-white text-sm truncate font-mono">
+                    <h3 className={`font-bold text-sm truncate font-mono ${
+                      isDark ? 'text-white' : 'text-neutral-900'
+                    }`}>
                       {tile.title}
                     </h3>
                   </div>
@@ -513,7 +543,11 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
                   <div className="flex items-center gap-1.5 shrink-0">
                     {/* Local User Badge */}
                     <div
-                      className="px-1.5 py-0.5 rounded bg-white text-black text-[10px] font-mono font-extrabold flex items-center gap-1"
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-extrabold flex items-center gap-1 ${
+                        isDark
+                          ? 'bg-white text-black'
+                          : 'bg-neutral-900 text-white'
+                      }`}
                       title="You (Local Client Author) • Active"
                     >
                       <span>[YOU]</span>
@@ -534,8 +568,12 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
                         }}
                         className={`flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-mono font-bold transition-all group ${
                           c.isEditing
-                            ? 'bg-white text-black border-white ring-2 ring-white/30'
-                            : 'bg-neutral-950 border-neutral-700 text-neutral-300 hover:border-white hover:text-white'
+                            ? isDark
+                              ? 'bg-white text-black border-white ring-2 ring-white/30'
+                              : 'bg-neutral-900 text-white border-neutral-900 ring-2 ring-neutral-900/30'
+                            : isDark
+                            ? 'bg-neutral-950 border-neutral-700 text-neutral-300 hover:border-white hover:text-white'
+                            : 'bg-neutral-100 border-neutral-400 text-neutral-700 hover:border-neutral-600 hover:text-neutral-900'
                         }`}
                         title={`Click to inspect ${c.name} co-presence details & active block telemetry`}
                       >
@@ -543,7 +581,9 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
 
                         {/* Real-time high-contrast solid activity dot indicator */}
                         {c.isEditing && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
+                          <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                            isDark ? 'bg-black' : 'bg-white'
+                          }`} />
                         )}
                       </button>
                     ))}
@@ -554,7 +594,11 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
                         e.stopPropagation();
                         handleOpenShare(tile);
                       }}
-                      className="px-2 py-0.5 rounded bg-neutral-950 border border-neutral-700 hover:border-white text-[10px] font-mono text-neutral-300 flex items-center gap-1 ml-1"
+                      className={`px-2 py-0.5 rounded border text-[10px] font-mono flex items-center gap-1 ml-1 transition-colors ${
+                        isDark
+                          ? 'bg-neutral-950 border-neutral-700 hover:border-white text-neutral-300 hover:text-white'
+                          : 'bg-neutral-100 border-neutral-400 hover:border-neutral-600 text-neutral-700 hover:text-neutral-900'
+                      }`}
                     >
                       {tile.isShared ? <Unlock className="w-2.5 h-2.5" /> : <Lock className="w-2.5 h-2.5" />}
                       <span className="uppercase">{tile.accessLevel}</span>
@@ -580,10 +624,14 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
                         return (
                           <div
                             key={block.id}
-                            className={`p-2.5 rounded bg-neutral-950 border transition-all flex items-start justify-between gap-3 group ${
+                            className={`p-2.5 rounded border transition-all flex items-start justify-between gap-3 group ${
                               isBeingEdited
-                                ? 'border-white bg-neutral-900/80 ring-1 ring-white/20'
-                                : 'border-neutral-800 hover:border-neutral-700'
+                                ? isDark
+                                  ? 'border-white bg-neutral-900/80 ring-1 ring-white/20'
+                                  : 'border-neutral-900 bg-neutral-100/80 ring-1 ring-neutral-900/20'
+                                : isDark
+                                ? 'bg-neutral-950 border-neutral-800 hover:border-neutral-700'
+                                : 'bg-neutral-100 border-neutral-400 hover:border-neutral-500'
                             }`}
                           >
                             <div className="flex items-start gap-2.5 min-w-0 flex-1">
@@ -683,10 +731,14 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
                               setEditingBlockId(block.id);
                               setEditingBlockText(block.content);
                             }}
-                            className={`p-2.5 rounded bg-neutral-950 border transition-all flex flex-col gap-2 group ${
+                            className={`p-2.5 rounded border transition-all flex flex-col gap-2 group ${
                               isBeingEdited
-                                ? 'border-white bg-neutral-900 ring-1 ring-white/30'
-                                : 'border-neutral-800 hover:border-neutral-700'
+                                ? isDark
+                                  ? 'border-white bg-neutral-900 ring-1 ring-white/30'
+                                  : 'border-neutral-900 bg-neutral-100 ring-1 ring-neutral-900/30'
+                                : isDark
+                                ? 'bg-neutral-950 border-neutral-800 hover:border-neutral-700'
+                                : 'bg-neutral-100 border-neutral-400 hover:border-neutral-500'
                             }`}
                           >
                             <div className="flex items-center justify-between text-[10px] text-neutral-500 font-mono">
@@ -782,7 +834,11 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
                       {tile.blocks.map(block => (
                         <div
                           key={block.id}
-                          className="p-3 rounded bg-neutral-950 border border-neutral-800 hover:border-neutral-700 transition-all flex flex-col justify-between gap-2 group"
+                          className={`p-3 rounded border hover:border-neutral-600 transition-all flex flex-col justify-between gap-2 group ${
+                            isDark
+                              ? 'bg-neutral-950 border-neutral-800'
+                              : 'bg-neutral-100 border-neutral-400'
+                          }`}
                         >
                           <div className="space-y-1">
                             <div className="flex items-center justify-between text-[10px] text-neutral-500">
@@ -841,7 +897,11 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
                     <select
                       value={draftCategory}
                       onChange={e => setDraftCategory(e.target.value)}
-                      className="bg-neutral-950 border border-neutral-800 rounded px-2 py-1.5 text-xs text-white font-mono outline-none"
+                      className={`border rounded px-2 py-1.5 text-xs font-mono outline-none ${
+                        isDark
+                          ? 'bg-neutral-950 border-neutral-800 text-white'
+                          : 'bg-neutral-100 border-neutral-400 text-neutral-900'
+                      }`}
                     >
                       <option value="Paper">Paper</option>
                       <option value="Repository">Repository</option>
@@ -866,7 +926,11 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
                         ? 'Paste source URL or ArXiv link...'
                         : 'Append new note thought block...'
                     }
-                    className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-2.5 py-1.5 text-xs text-white placeholder-neutral-500 font-mono outline-none focus:border-white"
+                    className={`flex-1 border rounded px-2.5 py-1.5 text-xs font-mono outline-none focus:border-opacity-100 ${
+                      isDark
+                        ? 'bg-neutral-950 border-neutral-800 text-white placeholder-neutral-500 focus:border-white'
+                        : 'bg-neutral-100 border-neutral-400 text-neutral-900 placeholder-neutral-600 focus:border-neutral-600'
+                    }`}
                   />
                   <button
                     type="submit"
@@ -913,35 +977,55 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
 
       {/* Cryptographic Share Token Modal */}
       {isShareModalOpen && selectedTileForShare && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 font-sans">
-          <div className="w-full max-w-md bg-neutral-900 border border-neutral-700 rounded-lg p-5 text-white shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
+        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 font-sans bg-black/80 backdrop-blur-md`}>
+          <div className={`w-full max-w-md rounded-lg p-5 shadow-2xl space-y-4 border ${
+            isDark
+              ? 'bg-neutral-900 border-neutral-700 text-white'
+              : 'bg-neutral-50 border-neutral-300 text-neutral-900'
+          }`}>
+            <div className={`flex items-center justify-between pb-2 border-b ${
+              isDark ? 'border-neutral-800' : 'border-neutral-300'
+            }`}>
               <div className="flex items-center gap-2">
-                <Share2 className="w-4 h-4 text-white" />
-                <h3 className="font-bold text-sm font-mono uppercase">
+                <Share2 className={`w-4 h-4 ${isDark ? 'text-white' : 'text-neutral-900'}`} />
+                <h3 className={`font-bold text-sm font-mono uppercase ${
+                  isDark ? 'text-white' : 'text-neutral-900'
+                }`}>
                   Glass Canvas Token Sharing
                 </h3>
               </div>
               <button
                 onClick={() => setIsShareModalOpen(false)}
-                className="text-neutral-400 hover:text-white font-mono text-xs"
+                className={`font-mono text-xs ${
+                  isDark
+                    ? 'text-neutral-400 hover:text-white'
+                    : 'text-neutral-600 hover:text-neutral-900'
+                }`}
               >
                 [X]
               </button>
             </div>
 
             <div>
-              <span className="text-[11px] text-neutral-400 font-mono block mb-1">
+              <span className={`text-[11px] font-mono block mb-1 ${
+                isDark ? 'text-neutral-400' : 'text-neutral-600'
+              }`}>
                 Target Bento Module:
               </span>
-              <div className="p-2.5 rounded bg-neutral-950 border border-neutral-800 font-mono text-xs text-white">
+              <div className={`p-2.5 rounded border font-mono text-xs ${
+                isDark
+                  ? 'bg-neutral-950 border-neutral-800 text-white'
+                  : 'bg-neutral-100 border-neutral-300 text-neutral-900'
+              }`}>
                 {selectedTileForShare.title}
               </div>
             </div>
 
             {/* Permission Selector */}
             <div>
-              <span className="text-[11px] text-neutral-400 font-mono block mb-1.5">
+              <span className={`text-[11px] font-mono block mb-1.5 ${
+                isDark ? 'text-neutral-400' : 'text-neutral-600'
+              }`}>
                 Cryptographic Access Level:
               </span>
               <div className="grid grid-cols-3 gap-2 font-mono text-xs">
@@ -952,8 +1036,12 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
                     onClick={() => handleUpdateAccessLevel(access)}
                     className={`py-1.5 px-2 rounded border uppercase font-bold text-[10px] transition-all ${
                       selectedTileForShare.accessLevel === access
-                        ? 'bg-white text-black border-white'
-                        : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:border-neutral-600'
+                        ? isDark
+                          ? 'bg-white text-black border-white'
+                          : 'bg-neutral-900 text-white border-neutral-900'
+                        : isDark
+                        ? 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:border-neutral-600'
+                        : 'bg-neutral-100 text-neutral-700 border-neutral-300 hover:border-neutral-400'
                     }`}
                   >
                     {access}
@@ -964,18 +1052,30 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
 
             {/* Token URL Display */}
             <div>
-              <span className="text-[11px] text-neutral-400 font-mono block mb-1">
+              <span className={`text-[11px] font-mono block mb-1 ${
+                isDark ? 'text-neutral-400' : 'text-neutral-600'
+              }`}>
                 Secure Token URL:
               </span>
-              <div className="flex items-center gap-2 bg-neutral-950 border border-neutral-800 p-2 rounded text-xs font-mono">
+              <div className={`flex items-center gap-2 p-2 rounded border font-mono text-xs ${
+                isDark
+                  ? 'bg-neutral-950 border-neutral-800'
+                  : 'bg-neutral-100 border-neutral-300'
+              }`}>
                 <input
                   readOnly
                   value={`${window.location.origin}/#bento-collab=${selectedTileForShare.shareToken}`}
-                  className="bg-transparent text-neutral-300 w-full outline-none select-all"
+                  className={`bg-transparent w-full outline-none select-all ${
+                    isDark ? 'text-neutral-300' : 'text-neutral-700'
+                  }`}
                 />
                 <button
                   onClick={() => handleCopyShareLink(selectedTileForShare.shareToken)}
-                  className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 text-white shrink-0"
+                  className={`p-1 rounded shrink-0 transition-colors ${
+                    isDark
+                      ? 'bg-neutral-800 hover:bg-neutral-700 text-white'
+                      : 'bg-neutral-200 hover:bg-neutral-300 text-neutral-900'
+                  }`}
                   title="Copy Link"
                 >
                   <Copy className="w-3.5 h-3.5" />
@@ -992,7 +1092,11 @@ export const CollaborativeBentoView: React.FC<CollaborativeBentoViewProps> = ({
                 {selectedTileForShare.collaborators.map(c => (
                   <div
                     key={c.id}
-                    className="flex items-center justify-between p-2 rounded bg-neutral-950 border border-neutral-800"
+                    className={`flex items-center justify-between p-2 rounded border ${
+                      isDark
+                        ? 'bg-neutral-950 border-neutral-800'
+                        : 'bg-neutral-100 border-neutral-400'
+                    }`}
                   >
                     <div className="flex items-center gap-2">
                       <span className="px-1.5 py-0.5 rounded bg-neutral-800 text-white font-bold text-[10px]">

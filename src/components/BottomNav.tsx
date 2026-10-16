@@ -55,26 +55,18 @@ const BottomNavComponent: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }
                 haptics.medium();
                 onChangeTab(item.id);
               }}
-              className="flex flex-col items-center justify-center gap-1 flex-1 py-2 px-1 bg-transparent border-0 ring-0 outline-none transition-colors select-none relative focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
-              style={isActive ? {
-                color: 'var(--theme-primary, #e63946)'
-              } : {
-                color: typeof window !== 'undefined' && document.documentElement.classList.contains('dark')
-                  ? '#a1a1a1'
-                  : '#a1a1a1'
+              className="flex flex-col items-center justify-center gap-1 flex-1 py-2 px-1 bg-transparent border-0 outline-none ring-0 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 transition-colors select-none relative"
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                ...(isActive ? {
+                  color: 'var(--theme-primary, #e63946)'
+                } : {
+                  color: typeof window !== 'undefined' && document.documentElement.classList.contains('dark')
+                    ? '#a1a1a1'
+                    : '#a1a1a1'
+                })
               }}
             >
-              {/* Top accent bar for active state */}
-              {isActive && (
-                <div
-                  className="absolute top-0 left-1/2 transform -translate-x-1/2 w-6 h-0.5 rounded-full"
-                  style={{
-                    backgroundColor: 'var(--theme-primary, #e63946)',
-                    boxShadow: '0 0 8px var(--theme-accent-glow, rgba(230, 57, 70, 0.5))'
-                  }}
-                  aria-hidden="true"
-                />
-              )}
               {item.isLogo ? (
                 <AtlauzLogo
                   variant="icon"
@@ -88,10 +80,10 @@ const BottomNavComponent: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }
               <span className={`text-[10px] tracking-wide font-mono ${isActive ? 'font-bold' : 'font-medium'}`}>
                 {item.label}
               </span>
-              {/* Bottom dot indicator for active state */}
+              {/* Active indicator: centered dot underneath */}
               {isActive && (
                 <span 
-                  className="w-1.5 h-1.5 rounded-full"
+                  className="w-1.5 h-1.5 rounded-full mt-0.5"
                   style={{
                     backgroundColor: 'var(--theme-primary, #e63946)',
                     boxShadow: '0 0 6px var(--theme-accent-glow, rgba(230, 57, 70, 0.4))'

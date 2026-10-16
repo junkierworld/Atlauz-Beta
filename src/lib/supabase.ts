@@ -3,19 +3,29 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
+const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
+
+if (!isSupabaseConfigured) {
   console.warn(
-    'Supabase credentials not configured. ' +
-    'Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local'
+    '⚠️ Supabase not configured. ' +
+    'App will work offline-only using localStorage. ' +
+    'To enable cloud features, add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local'
   );
 }
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
+// Only create Supabase client if credentials are available
+// This prevents errors during development without backend
+export const supabase = isSupabaseConfigured 
+  ? createClient(supabaseUrl!, supabaseAnonKey!)
+  : null;
+
+export const isOfflineMode = !isSupabaseConfigured;
 
 /**
  * Get current user session
  */
 export async function getCurrentSession() {
+  if (!supabase) return null;
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) throw error;
@@ -30,6 +40,7 @@ export async function getCurrentSession() {
  * Get current user
  */
 export async function getCurrentUser() {
+  if (!supabase) return null;
   try {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) throw error;
@@ -44,6 +55,9 @@ export async function getCurrentUser() {
  * Sign up with email and password
  */
 export async function signUp(email: string, password: string) {
+  if (!supabase) {
+    return { user: null, session: null, error: 'Offline mode: signup not available' };
+  }
   try {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -60,6 +74,9 @@ export async function signUp(email: string, password: string) {
  * Sign in with email and password
  */
 export async function signIn(email: string, password: string) {
+  if (!supabase) {
+    return { user: null, session: null, error: 'Offline mode: signin not available' };
+  }
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -76,6 +93,9 @@ export async function signIn(email: string, password: string) {
  * Sign out (logout)
  */
 export async function signOut() {
+  if (!supabase) {
+    return { error: null };
+  }
   try {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
@@ -96,6 +116,9 @@ export async function createUserProfile(
   firstName?: string,
   lastName?: string
 ) {
+  if (!supabase) {
+    return { profile: null, error: 'Offline mode: profile creation not available' };
+  }
   try {
     const { data, error } = await supabase
       .from('user_profiles')
@@ -124,6 +147,9 @@ export async function createUserProfile(
  * Get user profile
  */
 export async function getUserProfile(userId: string) {
+  if (!supabase) {
+    return { profile: null, error: 'Offline mode: profile fetching not available' };
+  }
   try {
     const { data, error } = await supabase
       .from('user_profiles')
@@ -145,6 +171,9 @@ export async function updateUserProfile(
   userId: string,
   updates: Record<string, any>
 ) {
+  if (!supabase) {
+    return { profile: null, error: 'Offline mode: profile update not available' };
+  }
   try {
     const { data, error } = await supabase
       .from('user_profiles')
@@ -166,9 +195,13 @@ export async function updateUserProfile(
 export function onAuthStateChange(
   callback: (user: any, session: any) => void
 ) {
+  if (!supabase) {
+    console.warn('Offline mode: auth state changes not available');
+    return () => {};
+  }
   const { data } = supabase.auth.onAuthStateChange((event, session) => {
     callback(session?.user, session);
   });
 
-  return data?.subscription?.unsubscribe;
+  return data?.subscription?.unsubscribe || (() => {});
 }

@@ -16,7 +16,7 @@ export function useResourcePersistence() {
    * Load all resources from Supabase for current user
    */
   const loadResources = useCallback(async (): Promise<ResourceItem[]> => {
-    if (!profile?.id) return [];
+    if (!profile?.id || !supabase) return [];
 
     try {
       setIsSyncing(true);
@@ -43,7 +43,7 @@ export function useResourcePersistence() {
    */
   const saveResource = useCallback(
     async (resource: ResourceItem): Promise<boolean> => {
-      if (!profile?.id) return false;
+      if (!profile?.id || !supabase) return false;
 
       try {
         setIsSyncing(true);
@@ -72,7 +72,7 @@ export function useResourcePersistence() {
    */
   const updateResource = useCallback(
     async (id: string, updates: Partial<ResourceItem>): Promise<boolean> => {
-      if (!profile?.id) return false;
+      if (!profile?.id || !supabase) return false;
 
       try {
         setIsSyncing(true);
@@ -106,7 +106,7 @@ export function useResourcePersistence() {
    */
   const deleteResource = useCallback(
     async (id: string): Promise<boolean> => {
-      if (!profile?.id) return false;
+      if (!profile?.id || !supabase) return false;
 
       try {
         setIsSyncing(true);

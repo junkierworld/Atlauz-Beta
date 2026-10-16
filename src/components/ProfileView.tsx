@@ -308,9 +308,9 @@ export const ProfileView = React.memo(function ProfileViewComponent({
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12 font-sans select-none">
+    <div className="w-full max-w-full box-border space-y-3 sm:space-y-6 px-2 sm:px-4 pb-8 sm:pb-12 font-sans select-none overflow-x-hidden">
       {/* Top Banner / Hero Profile Card */}
-      <section className="bg-neutral-900 border border-neutral-800 rounded-lg p-5 sm:p-6 shadow-md relative overflow-hidden">
+      <section className="bg-neutral-900 border border-neutral-800 rounded-lg p-3 sm:p-5 shadow-md relative overflow-hidden">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-lg bg-neutral-800 border-2 border-neutral-600 flex items-center justify-center shrink-0 shadow-inner">
@@ -357,7 +357,7 @@ export const ProfileView = React.memo(function ProfileViewComponent({
         </div>
 
         {/* Prototype Architecture Navigation Sub-Tabs */}
-        <div className="flex items-center gap-1 mt-6 border-b border-neutral-800 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-1 mt-6 border-b border-neutral-800 overflow-x-auto flex-wrap no-scrollbar w-full box-border">
           {[
             { id: 'ecosystem', label: '1. Role Ecosystem', icon: Compass },
             { id: 'preferences', label: '2. Learning Preferences', icon: Sliders },
@@ -370,7 +370,7 @@ export const ProfileView = React.memo(function ProfileViewComponent({
               <button
                 key={tab.id}
                 onClick={() => setActiveSection(tab.id as any)}
-                className={`flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold tracking-wide border-b-2 transition-all whitespace-nowrap ${
+                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3.5 py-2 sm:py-2.5 text-[10px] sm:text-xs font-bold tracking-wide border-b-2 transition-all whitespace-nowrap flex-1 sm:flex-none justify-center sm:justify-start ${
                   isActive
                     ? 'border-white text-white bg-neutral-800/60'
                     : 'border-transparent text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/30'
@@ -461,12 +461,12 @@ export const ProfileView = React.memo(function ProfileViewComponent({
             </div>
 
             {/* Ecosystem KPI Tiles */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 w-full box-border">
               {currentRoleSpec.ecosystemDeliverables.map((item, idx) => (
-                <div key={idx} className="bg-neutral-950 border border-neutral-800 rounded-md p-3">
-                  <div className="text-[11px] text-neutral-400 font-mono">{item.label}</div>
-                  <div className="text-base font-bold text-white mt-1 font-mono">{item.value}</div>
-                  <div className="text-[10px] text-neutral-400 mt-0.5">{item.hint}</div>
+                <div key={idx} className="bg-neutral-950 border border-neutral-800 rounded-md p-2 sm:p-3 w-full box-border">
+                  <div className="text-[10px] sm:text-[11px] text-neutral-400 font-mono">{item.label}</div>
+                  <div className="text-sm sm:text-base font-bold text-white mt-1 font-mono">{item.value}</div>
+                  <div className="text-[9px] sm:text-[10px] text-neutral-400 mt-0.5">{item.hint}</div>
                 </div>
               ))}
             </div>
@@ -596,7 +596,7 @@ export const ProfileView = React.memo(function ProfileViewComponent({
 
             <div className="divide-y divide-neutral-800">
               {/* High-Contrast Adaptable Font Color */}
-              <div className="py-3.5 flex items-center justify-between gap-4">
+              <div className="py-3 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 w-full box-border">
                 <div>
                   <div className="text-xs font-bold text-white font-mono">Adaptable High-Contrast Font Readability</div>
                   <div className="text-[11px] text-neutral-400">
@@ -627,7 +627,7 @@ export const ProfileView = React.memo(function ProfileViewComponent({
               </div>
 
               {/* Bento Box Layout Preference */}
-              <div className="py-3.5 flex items-center justify-between gap-4">
+              <div className="py-3 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 w-full box-border">
                 <div>
                   <div className="text-xs font-bold text-white font-mono">Bento Mode Default in Workspace</div>
                   <div className="text-[11px] text-neutral-400">
@@ -655,7 +655,7 @@ export const ProfileView = React.memo(function ProfileViewComponent({
               </div>
 
               {/* Tactile Haptic Actuation */}
-              <div className="py-3.5 flex items-center justify-between gap-4">
+              <div className="py-3 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 w-full box-border">
                 <div>
                   <div className="text-xs font-bold text-white font-mono">Linear Resonant Haptic Actuation</div>
                   <div className="text-[11px] text-neutral-400">
@@ -683,7 +683,7 @@ export const ProfileView = React.memo(function ProfileViewComponent({
               </div>
 
               {/* Auto-Summary on Completion */}
-              <div className="py-3.5 flex items-center justify-between gap-4">
+              <div className="py-3 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 w-full box-border">
                 <div>
                   <div className="text-xs font-bold text-white font-mono">Auto-Summary on Chapter / Task Finish</div>
                   <div className="text-[11px] text-neutral-400">
@@ -714,7 +714,7 @@ export const ProfileView = React.memo(function ProfileViewComponent({
               </div>
 
               {/* Sound Effects */}
-              <div className="py-3.5 flex items-center justify-between gap-4">
+              <div className="py-3 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 w-full box-border">
                 <div>
                   <div className="text-xs font-bold text-white font-mono">Mechanical & Sonic Audio Feedback</div>
                   <div className="text-[11px] text-neutral-400">

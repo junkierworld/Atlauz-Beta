@@ -24,7 +24,7 @@ export function useTelemetry() {
       event: string,
       metadata?: Record<string, any>
     ): Promise<void> => {
-      if (!profile?.id) return;
+      if (!profile?.id || !supabase) return;
 
       try {
         const telemetryEvent: TelemetryEvent = {

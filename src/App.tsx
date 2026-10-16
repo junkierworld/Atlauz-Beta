@@ -73,6 +73,9 @@ import {
 } from './utils/storage';
 
 export default function App() {
+  // Debug: Log that App component is rendering
+  console.log('🚀 App component mounted');
+  
   const [activeTab, setActiveTab] = useState<'hub' | 'library' | 'workspace' | 'companion' | 'profile'>('hub');
   const [companion, setCompanion] = useState<CompanionState>(() =>
     loadStoredData(STORAGE_KEYS.COMPANION, initialCompanion)
@@ -85,6 +88,9 @@ export default function App() {
   const [settings, setSettings] = useState<UserAccountSettings>(() =>
     loadStoredData(STORAGE_KEYS.SETTINGS, initialSettings)
   );
+  
+  console.log('Current settings:', settings);
+  console.log('Theme:', settings?.theme);
   const [learningPaths, setLearningPaths] = useState<LearningPath[]>(() =>
     loadStoredData(STORAGE_KEYS.LEARNING_PATHS, INITIAL_LEARNING_PATHS)
   );
@@ -486,6 +492,23 @@ export default function App() {
     }
   }, [settings.theme, settings.themeIntensity]);
 
+  // Fix mobile scroll on mount: ensure body/html allow scrolling
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    
+    // Reset any scroll-blocking CSS
+    html.style.overflow = 'visible';
+    html.style.overflowY = 'auto';
+    body.style.overflow = 'visible';
+    body.style.overflowY = 'auto';
+    body.style.touchAction = 'auto';
+    
+    return () => {
+      // Cleanup
+    };
+  }, []);
+
   const handleToggleThemeIntensity = () => {
     const nextIntensity = settings.themeIntensity === 'fuller' ? 'focus' : 'fuller';
     handleUpdateSettings({ themeIntensity: nextIntensity });
@@ -499,19 +522,26 @@ export default function App() {
   const activeProject = defaultProjects[0];
   const activeResource = resources.find(r => r.id === activeResourceId) || null;
 
+  // Fallback render if something goes wrong
+  try {
   return (
     <div
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       style={{
         backgroundColor: 'var(--theme-bg-primary, #070707)',
-        color: 'var(--theme-text-primary, #ffffff)'
+        color: 'var(--theme-text-primary, #ffffff)',
+        overflow: 'visible',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        WebkitOverflowScrolling: 'touch',
+        touchAction: 'auto',
+        WebkitUserSelect: 'auto',
+        userSelect: 'auto',
+        width: '100%',
+        minHeight: '100vh'
       }}
-      className={`w-full relative selection:bg-white selection:text-black transition-colors duration-300 ${
-        isDistractionFree
-          ? 'h-[100dvh] max-h-[100dvh] overflow-hidden'
-          : 'min-h-screen'
-      }`}
+      className="w-full min-h-screen relative selection:bg-white selection:text-black transition-colors duration-300"
     >
       {/* Prototype Wireframe Architectural Grid & Immersive Theme Backdrop Pattern (z-0) */}
       <div
@@ -557,13 +587,25 @@ export default function App() {
 
       {/* Main Viewport Stage (z-10) */}
       <main
-        className={`relative z-10 w-full transition-all duration-300 ${
+        className={`relative z-10 w-full overflow-y-auto overflow-x-hidden transition-all duration-300 ${
           isDistractionFree
-            ? 'h-[100dvh] max-h-[100dvh] overflow-hidden p-1.5 sm:p-3 flex flex-col'
-            : activeTab === 'hub'
-            ? 'min-h-screen overflow-y-auto pt-16 pb-24 px-1.5 sm:px-4 sm:pt-24 flex flex-col'
-            : 'min-h-screen pt-20 pb-24 px-3 sm:px-4'
+            ? 'p-1.5 sm:p-3 flex flex-col'
+            : 'flex flex-col px-2 sm:px-4 pt-16 sm:pt-24 pb-32 sm:pb-40'
         }`}
+        style={{
+          minHeight: isDistractionFree ? '100dvh' : 'auto',
+          maxHeight: isDistractionFree ? '100dvh' : 'none',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+          touchAction: 'pan-y',
+          WebkitUserSelect: 'auto',
+          userSelect: 'auto',
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
       >
         {activeTab === 'hub' && (
           <HubView
@@ -863,4 +905,51 @@ export default function App() {
       )}
     </div>
   );
+  } catch (error) {
+    console.error('🔴 App rendering error:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    return (
+      <div style={{ 
+        padding: '40px', 
+        background: '#1a1a1a', 
+        color: '#fff', 
+        fontFamily: 'monospace',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <h1 style={{ color: '#ff6b6b', marginBottom: '20px' }}>⚠️ App Error</h1>
+        <p style={{ maxWidth: '600px', marginBottom: '20px', lineHeight: '1.6' }}>
+          {errorMsg}
+        </p>
+        <pre style={{ 
+          background: '#0a0a0a', 
+          padding: '15px', 
+          borderRadius: '5px',
+          maxWidth: '600px',
+          overflow: 'auto',
+          marginBottom: '20px'
+        }}>
+          {error instanceof Error ? error.stack : JSON.stringify(error, null, 2)}
+        </pre>
+        <button 
+          onClick={() => window.location.reload()} 
+          style={{ 
+            padding: '10px 20px', 
+            background: '#4c9aff', 
+            color: '#000', 
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }}
+        >
+          🔄 Reload Page
+        </button>
+      </div>
+    );
+  }
 }

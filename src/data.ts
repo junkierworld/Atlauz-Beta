@@ -23,25 +23,12 @@ export const AVAILABLE_BADGES: ResourceBadge[] = [
   { id: 'core', label: '✦ Core Spec', icon: 'Pin', color: '#ffffff', bgColor: 'rgba(255, 255, 255, 0.18)', borderColor: 'rgba(255, 255, 255, 0.4)' }
 ];
 
-// Empty companion for new users - but with one starter fish
+// Empty companion for new users
 export const initialCompanion: CompanionState = {
   name: 'Companion',
   stateMachine: 'Serene_Balanced.json',
-  primaryFishId: 'fish-starter-001',
-  fishes: [
-    {
-      id: 'fish-starter-001',
-      name: 'Your First Friend',
-      species: 'Starter Companion',
-      color: '#ffffff',
-      accentColor: '#888888',
-      tailType: 'veil',
-      personality: 'Curious & Welcoming',
-      size: 1.0,
-      adoptedAt: 'Today',
-      isPrimary: true
-    }
-  ],
+  primaryFishId: null,
+  fishes: [],
   headIndex: 1,
   bodyIndex: 1,
   tailIndex: 2,
@@ -51,7 +38,7 @@ export const initialCompanion: CompanionState = {
   accentColor: '#888888',
   featuresEnabled: true,
   messagesEnabled: true,
-  customMessages: ['Welcome to ATLAUZ', 'Start building your workspace', 'Focus on what matters']
+  customMessages: []
 };
 
 // Empty telemetry for new users
@@ -66,7 +53,7 @@ export const initialTelemetry: CognitiveTelemetry = {
   zeroContextSwitchSavedHours: 0
 };
 
-// Placeholder project for new users
+// Minimal default project for new users
 export const defaultProjects: ProjectItem[] = [
   {
     id: 'workspace-default',

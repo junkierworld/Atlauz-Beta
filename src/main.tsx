@@ -40,14 +40,21 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ErrorBoundary>
-      <Router>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </Router>
-    </ErrorBoundary>
-  </StrictMode>,
-);
+console.log('📌 main.tsx: Starting React app...');
+
+try {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <ErrorBoundary>
+        <Router>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </Router>
+      </ErrorBoundary>
+    </StrictMode>,
+  );
+  console.log('✅ main.tsx: React app rendered successfully');
+} catch (err) {
+  console.error('❌ main.tsx: Failed to render React app:', err);
+}
